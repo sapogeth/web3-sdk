@@ -475,20 +475,240 @@
       align-items: center;
     }
 
-    /* ── Responsive ── */
+    /* ── Glow effects ── */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(108,99,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero { position: relative; }
+    .hero > * { position: relative; z-index: 1; }
+
+    /* Animated gradient border on stat cards */
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(108,99,255,0.06), rgba(0,212,170,0.04));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .stat-card:hover::before { opacity: 1; }
+
+    /* Feature card shimmer */
+    .feature-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -60%;
+      width: 40%; height: 200%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+      transform: skewX(-20deg);
+      transition: left 0.6s ease;
+    }
+    .feature-card:hover::after { left: 120%; }
+
+    /* Smooth scroll */
+    html { scroll-behavior: smooth; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a3a5a; }
+
+    /* Mobile hamburger button */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 6px;
+      background: none;
+      border: none;
+      z-index: 200;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+    /* Mobile sidebar overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 99;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .sidebar-overlay.show { opacity: 1; }
+
+    /* Code copy button */
+    .pre-wrap { position: relative; }
+    .pre-wrap .copy-code {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      font-family: inherit;
+      opacity: 0;
+      transition: all 0.2s;
+    }
+    .pre-wrap:hover .copy-code { opacity: 1; }
+    .pre-wrap .copy-code:hover { color: var(--accent2); border-color: var(--accent2); }
+
+    /* Inline code chip */
+    p code, li code, td code {
+      font-size: 0.82em;
+      letter-spacing: -0.01em;
+    }
+
+    /* Table scroll wrapper on mobile */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ── Responsive — Tablet (≤ 1100px) ── */
+    @media (max-width: 1100px) {
+      main { padding: 2.5rem 2.5rem; max-width: 100%; }
+      aside { width: 210px; }
+    }
+
+    /* ── Responsive — Small tablet (≤ 900px) ── */
     @media (max-width: 900px) {
-      aside { display: none; }
-      main { padding: 2rem 1.5rem; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
+      /* Nav */
+      .nav-links { display: none; }
+      .nav-install { font-size: 0.78rem; padding: 5px 10px; }
+      .hamburger { display: flex; }
+
+      /* Sidebar — drawer */
+      aside {
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        width: 280px;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding-top: 70px;
+        background: var(--bg2);
+        border-right: 1px solid var(--border);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+      }
+      aside.open { transform: translateX(0); }
+      .sidebar-overlay { display: block; }
+
+      main { padding: 2rem 1.25rem; }
+      .layout { display: block; }
+
+      h1 { font-size: 2.2rem; }
+      .hero-sub { font-size: 1rem; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
       .features { grid-template-columns: 1fr; }
       .nist-grid { grid-template-columns: repeat(2, 1fr); }
-      h1 { font-size: 2rem; }
+      .install-block { max-width: 100%; }
+      footer { padding: 1.5rem 1.25rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+      pre { font-size: 0.8rem; padding: 1rem; }
+      .schema { padding: 1rem; font-size: 0.78rem; }
+      table { font-size: 0.8rem; }
+      th, td { padding: 7px 10px; }
+    }
+
+    /* ── Responsive — Mobile (≤ 600px) ── */
+    @media (max-width: 600px) {
+      nav { padding: 0 1rem; height: 52px; }
+      .nav-install { display: none; }
+
+      main { padding: 1.5rem 1rem; }
+      h1 { font-size: 1.75rem; line-height: 1.2; }
+      h2 { font-size: 1.3rem; }
+      h3 { font-size: 1rem; }
+      .hero-sub { font-size: 0.95rem; }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 2.5rem;
+      }
+      .stat-num { font-size: 1.5rem; }
+      .stat-label { font-size: 0.7rem; }
+
+      .badge-row { gap: 5px; }
+      .badge { font-size: 0.68rem; padding: 2px 8px; }
+
+      .features { grid-template-columns: 1fr; gap: 0.75rem; }
+      .nist-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      .nist-vectors { font-size: 1.2rem; }
+
+      .install-block { padding: 0.75rem 1rem; font-size: 0.85rem; }
+
+      .step { flex-direction: column; gap: 0.75rem; }
+      .step-num { width: 28px; height: 28px; font-size: 0.8rem; }
+
+      pre { font-size: 0.75rem; padding: 0.875rem; border-radius: 8px; }
+      .schema { font-size: 0.72rem; line-height: 1.8; overflow-x: auto; }
+
+      .demo-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; flex-wrap: nowrap; }
+      .demo-tab { padding: 8px 12px; font-size: 0.8rem; }
+      .demo-output { font-size: 0.72rem; }
+      .demo-input-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .demo-input-row label { width: auto; }
+      .demo-input-row input { width: 100%; }
+
+      .info, .warning { padding: 0.75rem 1rem; font-size: 0.85rem; }
+
+      table { font-size: 0.75rem; }
+      th, td { padding: 6px 8px; }
+    }
+
+    /* ── Responsive — Tiny (≤ 380px) ── */
+    @media (max-width: 380px) {
+      h1 { font-size: 1.5rem; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .nist-grid { grid-template-columns: 1fr 1fr; }
+      .install-block { font-size: 0.78rem; }
+      pre { font-size: 0.7rem; }
+    }
+
+    /* ── Touch improvements ── */
+    @media (hover: none) {
+      .feature-card:hover { border-color: var(--border); }
+      .stat-card:hover::before { opacity: 0; }
+      aside a:hover { background: none; color: var(--text2); }
+      .copy-code { opacity: 1 !important; }
     }
   </style>
 </head>
 <body>
 
 <!-- ── Navigation ── -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
 <nav>
   <a class="nav-logo" href="#">
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -507,6 +727,9 @@
   </div>
   <button class="nav-install" onclick="navigator.clipboard.writeText('npm install @stvor/web3').then(() => { this.textContent='Copied!'; setTimeout(() => this.textContent='npm install @stvor/web3', 1500) })">
     npm install @stvor/web3
+  </button>
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
   </button>
 </nav>
 
@@ -1231,6 +1454,39 @@ cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre
 </footer>
 
 <script>
+  // ── Mobile sidebar ────────────────────────────────────────────────────────────
+  function toggleSidebar() {
+    const aside    = document.querySelector('aside');
+    const overlay  = document.getElementById('overlay');
+    const hamburger = document.getElementById('hamburger');
+    const isOpen   = aside.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    overlay.classList.toggle('show', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+
+  function closeSidebar() {
+    const aside    = document.querySelector('aside');
+    const overlay  = document.getElementById('overlay');
+    const hamburger = document.getElementById('hamburger');
+    aside.classList.remove('open');
+    hamburger.classList.remove('open');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  // Close sidebar when a link is tapped on mobile
+  document.querySelectorAll('aside a').forEach(a => {
+    a.addEventListener('click', () => {
+      if (window.innerWidth <= 900) closeSidebar();
+    });
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
   // ── Sidebar active link on scroll ───────────────────────────────────────────
   const sections = document.querySelectorAll('section[id]');
   const links = document.querySelectorAll('aside a');
@@ -1245,6 +1501,36 @@ cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre
     });
   }, { rootMargin: '-20% 0px -70% 0px' });
   sections.forEach(s => observer.observe(s));
+
+  // ── Code copy buttons ─────────────────────────────────────────────────────────
+  document.querySelectorAll('pre').forEach(pre => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pre-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-code';
+    btn.textContent = 'copy';
+    btn.onclick = () => {
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = 'copy', 1500);
+      });
+    };
+    wrap.appendChild(btn);
+  });
+
+  // ── Table wrap for mobile ─────────────────────────────────────────────────────
+  document.querySelectorAll('table').forEach(table => {
+    if (!table.closest('.table-wrap')) {
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    }
+  });
 
   // ── Demo tabs ────────────────────────────────────────────────────────────────
   function showTab(id) {
