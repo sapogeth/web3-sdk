@@ -561,6 +561,10 @@
     <div class="sidebar-title">Playground</div>
     <a href="#demo">Live demo</a>
   </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Meta</div>
+    <a href="#status">Status &amp; limitations</a>
+  </div>
 </aside>
 
 <!-- ── Main content ── -->
@@ -1166,6 +1170,42 @@ node deploy.mjs
     <div id="demo-loading" style="display:none;color:var(--text2);font-size:0.85rem;margin-top:0.75rem">
       ⏳ Loading WASM engine (270 KB)...
     </div>
+  </section>
+
+  <!-- Status -->
+  <section class="section" id="status">
+    <h2>Status &amp; known limitations</h2>
+    <div class="info">
+      <strong>v0.2.0 — pre-production.</strong> Cryptographic core is complete and NIST-verified. TON integration requires a deployed contract.
+    </div>
+
+    <h3>ML-KEM decapsulation key — 64 bytes explained</h3>
+    <p>
+      <code>wasm_mlkem_keygen()</code> returns a 64-byte <code>dk</code>. This is the seed
+      <code>(d ‖ z)</code> from <strong>FIPS 203 §7.1</strong> — not the 2400-byte expanded
+      decapsulation key. The full expanded key is re-derived from this seed on every
+      <code>wasm_mlkem_decaps()</code> call. This is the canonical private representation
+      recommended by FIPS 203 and used by the RustCrypto <code>ml-kem</code> crate.
+      Functionally equivalent to the 2400-byte form. <strong>Keep <code>dk</code> secret.</strong>
+    </p>
+
+    <h3>TON integration status</h3>
+    <table>
+      <tr><th>Component</th><th>Status</th></tr>
+      <tr><td><code>stvor_registry.fc</code> FunC contract</td><td class="check">✓ Compiled, source open</td></tr>
+      <tr><td>Contract deployment (testnet)</td><td style="color:var(--accent3)">⚠ Not yet deployed — run <code>deploy.mjs</code></td></tr>
+      <tr><td>Cell builder for registry ABI</td><td class="check">✓ Covers stvor_registry ops</td></tr>
+      <tr><td><code>fetchKeys()</code> via TonCenter v2</td><td class="check">✓ Implemented</td></tr>
+      <tr><td>TON Storage message delivery</td><td style="color:var(--accent3)">⚠ Requires TON Storage daemon</td></tr>
+      <tr><td><code>parseMsgMetaDict()</code></td><td style="color:var(--accent3)">⚠ Test against your TonCenter endpoint</td></tr>
+    </table>
+
+    <h3>Open source — verify the WASM yourself</h3>
+    <p>The Rust cryptographic core is fully open. Reproduce the WASM binary from source:</p>
+    <pre><code>git clone https://github.com/sapogeth/web3-sdk
+cd web3-sdk/crypto-core
+cargo test                <span class="cmt"># runs NIST ACVTS vectors</span>
+wasm-pack build --target web --out-dir ../sdk/wasm  <span class="cmt"># reproduce binary</span></code></pre>
   </section>
 
   <!-- Contributing -->

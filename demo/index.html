@@ -542,7 +542,9 @@
 <script type="module">
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const CONTRACT_ADDRESS = 'EQD_REPLACE_WITH_DEPLOYED_ADDRESS';
+// Deploy stvor_registry.fc to get a real address:
+// export STVOR_MNEMONIC="..." && node contracts/deploy.mjs
+const CONTRACT_ADDRESS = null; // not yet deployed — set after running deploy.mjs
 const TON_API_URL      = 'https://testnet.toncenter.com/api/v2';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -659,7 +661,7 @@ window.connectWallet = async function() {
       identity.mlkemEncapKey ? '1184 bytes (ML-KEM-768)' : 'disabled';
     document.getElementById('infoNetwork').textContent = 'TON Testnet (-3)';
     document.getElementById('infoContract').textContent =
-      CONTRACT_ADDRESS.slice(0, 20) + '...';
+      CONTRACT_ADDRESS ? CONTRACT_ADDRESS.slice(0, 20) + '...' : 'not deployed (run deploy.mjs)';
 
     document.getElementById('newChatBtn').disabled = false;
     document.getElementById('chatEmpty').querySelector('p').textContent =
