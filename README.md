@@ -10,7 +10,7 @@ The first E2EE library built for Web3 that is resistant to quantum computers —
 npm install @stvor/web3
 ```
 
-[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](https://github.com/sapogeth/web3-sdk)
+[![Tests](https://img.shields.io/badge/tests-73%2F73-brightgreen)](https://github.com/sapogeth/web3-sdk)
 [![NIST FIPS 203](https://img.shields.io/badge/NIST%20FIPS%20203-ML--KEM--768-blue)](https://csrc.nist.gov/pubs/fips/203/final)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://npmjs.com/@stvor/web3)
 [![TON](https://img.shields.io/badge/network-TON-0088cc)](https://ton.org)
@@ -383,10 +383,10 @@ Get testnet TON from [@testgiver_ton_bot](https://t.me/testgiver_ton_bot).
 ## Contributing
 
 ```bash
-# Run all tests (53 total)
-cd crypto-core && cargo test        # 28 Rust tests (incl. NIST vectors)
-cd sdk && node --experimental-wasm-modules --import tsx/esm src/__tests__/wasm.test.ts  # 17 WASM tests
-cd contracts && node --import tsx/esm tests/registry.test.ts  # 8 contract tests
+# Run all tests (73 total)
+cd crypto-core && cargo test        # 37 Rust (incl. NIST vectors + AA)
+cd sdk && node --experimental-wasm-modules --import tsx/esm src/__tests__/wasm.test.ts  # 26 WASM (incl. AA)
+cd contracts && node --import tsx/esm tests/registry.test.ts  # 10 contract
 
 # Rebuild WASM after Rust changes
 cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm

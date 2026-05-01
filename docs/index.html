@@ -573,7 +573,7 @@
   <!-- Hero -->
   <section class="hero" id="intro">
     <div class="badge-row">
-      <span class="badge badge-green">✓ 53/53 tests</span>
+      <span class="badge badge-green">✓ 73/73 tests</span>
       <span class="badge badge-blue">NIST FIPS 203</span>
       <span class="badge badge-green">0 dependencies</span>
       <span class="badge badge-blue">TON Web3</span>
@@ -603,8 +603,8 @@
       <div class="stat-label">npm dependencies</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num">53</div>
-      <div class="stat-label">NIST test vectors</div>
+      <div class="stat-num">73</div>
+      <div class="stat-label">total tests (53 NIST)</div>
     </div>
     <div class="stat-card">
       <div class="stat-num">768</div>
@@ -658,7 +658,7 @@
       <div class="feature-card">
         <div class="feature-icon">✅</div>
         <div class="feature-title">NIST ACVTS verified</div>
-        <div class="feature-desc">53 official test vectors. ECDH P-256, ECDSA, AES-256-GCM, and HKDF-SHA256 match NIST reference outputs exactly.</div>
+        <div class="feature-desc">53 NIST ACVTS vectors + 20 AA/integration tests = 73 total. ECDH P-256, ECDSA, AES-256-GCM, HKDF-SHA256, ML-KEM-768 verified.</div>
       </div>
     </div>
   </section>
@@ -1176,7 +1176,7 @@ node deploy.mjs
   <section class="section" id="status">
     <h2>Status &amp; known limitations</h2>
     <div class="info">
-      <strong>v0.2.0 — pre-production.</strong> Cryptographic core is complete and NIST-verified. TON integration requires a deployed contract.
+      <strong>v0.3.0 — pre-production.</strong> Cryptographic core is complete and NIST-verified (73 tests). TON integration requires a deployed contract.
     </div>
 
     <h3>ML-KEM decapsulation key — 64 bytes explained</h3>
@@ -1211,12 +1211,12 @@ wasm-pack build --target web --out-dir ../sdk/wasm  <span class="cmt"># reproduc
   <!-- Contributing -->
   <section class="section">
     <h2>Contributing</h2>
-    <pre><code><span class="cmt"># Run all 53 tests</span>
-cd crypto-core && cargo test                           <span class="cmt"># 28 Rust (incl. NIST vectors)</span>
+    <pre><code><span class="cmt"># Run all 73 tests</span>
+cd crypto-core && cargo test                           <span class="cmt"># 37 Rust (incl. NIST vectors + AA)</span>
 cd sdk && node --experimental-wasm-modules \
-  --import tsx/esm src/__tests__/wasm.test.ts          <span class="cmt"># 17 WASM</span>
+  --import tsx/esm src/__tests__/wasm.test.ts          <span class="cmt"># 26 WASM (incl. AA)</span>
 cd contracts && node --import tsx/esm \
-  tests/registry.test.ts                              <span class="cmt"># 8 contract</span>
+  tests/registry.test.ts                              <span class="cmt"># 10 contract</span>
 
 <span class="cmt"># Rebuild WASM after Rust changes</span>
 cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre>
