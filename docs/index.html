@@ -1110,20 +1110,13 @@ cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre
     if (wasm) return wasm;
     document.getElementById('demo-loading').style.display = 'block';
     try {
-      // Load from CDN via unpkg or local wasm path
-      // In production docs: load from /wasm/ directory
-      const wasmModule = await import('../sdk/wasm/stvor_crypto.js');
-      // Try to fetch local WASM binary
-      const wasmPath = '../sdk/wasm/stvor_crypto_bg.wasm';
-      let wasmBinary;
-      try {
-        const resp = await fetch(wasmPath);
-        if (resp.ok) wasmBinary = await resp.arrayBuffer();
-      } catch {}
-      wasm = await wasmModule.default(wasmBinary ? { module_or_path: wasmBinary } : undefined);
-      wasm._mod = wasmModule;
+      const wasmModule = await import('./wasm/stvor_crypto.js');
+      const resp = await fetch('./wasm/stvor_crypto_bg.wasm');
+      const wasmBinary = await resp.arrayBuffer();
+      await wasmModule.default({ module_or_path: wasmBinary });
+      wasm = wasmModule;
       document.getElementById('demo-loading').style.display = 'none';
-      return wasm._mod;
+      return wasm;
     } catch (e) {
       document.getElementById('demo-loading').innerHTML =
         '⚠️ WASM not available in this preview. <a href="https://github.com/stvor/web3" target="_blank">Run locally</a> to try the live demo.';

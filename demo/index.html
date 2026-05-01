@@ -557,18 +557,46 @@ let msgCount    = 0;
 
 async function initWasm() {
   try {
-    // Try to load from relative path (works when served from /demo/)
-    const wasmMod = await import('../sdk/wasm/stvor_crypto.js');
-    const response = await fetch('../sdk/wasm/stvor_crypto_bg.wasm');
+    const wasmMod = await import('./wasm/stvor_crypto.js');
+    const response = await fetch('./wasm/stvor_crypto_bg.wasm');
     const buffer   = await response.arrayBuffer();
     await wasmMod.default({ module_or_path: buffer });
     wasm = wasmMod;
     toast('✓ WASM crypto engine loaded', 'ok');
     return true;
-  } catch {
-    toast('⚠️ WASM not found — run from project root with a local server', 'err');
+  } catch (e) {
+    toast('⚠️ Run with a local server: npx serve .', 'err');
     return false;
   }
+}
+
+// ─── Inline identity derivation (mirrors wallet.ts, no external import) ────────
+
+async function deriveIdentityFromWasm(provider, w) {
+  const { address, chain } = provider.account;
+  const { signature } = await provider.signData({ cell: btoa(
+    `STVOR-IDENTITY-v1:${address.toLowerCase()}`
+  )});
+  const sig = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+  const toB64 = b => btoa(String.fromCharCode(...b))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const sigB64  = toB64(sig);
+  const saltB64 = toB64(new TextEncoder().encode('stvor-identity-salt'));
+  const ikSeed  = w.wasm_hkdf(sigB64, saltB64, 'IK', 32);
+  const spkSeed = w.wasm_hkdf(sigB64, saltB64, 'SPK', 32);
+  const identityKeyPair  = w.WasmKeyPair.from_private_key(ikSeed);
+  const signedPreKeyPair = w.WasmKeyPair.from_private_key(spkSeed);
+  const spkPub = Uint8Array.from(atob(signedPreKeyPair.public_key.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
+  const pqcKp  = JSON.parse(w.wasm_mlkem_keygen());
+  return {
+    address,
+    chain: chain === '-239' ? 'mainnet' : 'testnet',
+    identityKeyPair,
+    signedPreKeyPair,
+    signedPreKeySignature: w.wasm_ec_sign(spkPub, identityKeyPair),
+    mlkemEncapKey: pqcKp.ek,
+    mlkemDecapKey: pqcKp.dk,
+  };
 }
 
 // ─── Mock TonConnect (demo mode) ──────────────────────────────────────────────
@@ -612,10 +640,9 @@ window.connectWallet = async function() {
   const mockChain = '-3'; // testnet
 
   try {
-    // Import SDK
-    const { connectWithTON } = await import('../sdk/dist/wallet.js');
+    // Derive identity directly from WASM — no external SDK import needed
     const provider = buildMockProvider(mockAddr, mockChain);
-    const identity = await connectWithTON(provider, wasm, true);
+    const identity = await deriveIdentityFromWasm(provider, wasm);
 
     // Show wallet info
     document.getElementById('connectBtn').style.display = 'none';
