@@ -1,0 +1,21 @@
+{
+  "name": "stvor-contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node compile.mjs",
+    "test": "node --import tsx/esm tests/registry.test.ts",
+    "deploy:testnet": "node deploy.mjs testnet"
+  },
+  "dependencies": {
+    "@ton-community/func-js": "^0.11.0",
+    "@ton/core": "^0.59.0",
+    "@ton/ton": "^15.0.0",
+    "@ton/crypto": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0"
+  }
+}

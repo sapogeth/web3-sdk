@@ -1,0 +1,21 @@
+# Rust
+crypto-core/target/
+crypto-core/Cargo.lock
+
+# Node
+node_modules/
+*/node_modules/
+*.tgz
+sdk/dist/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts (exclude wasm/ source — it's generated but needed)
+contracts/build/
+
+# Keep dist/wasm in git — it's the compiled WASM needed by npm
+!sdk/dist/
+!sdk/dist/wasm/

@@ -1,0 +1,10 @@
+# Include everything in dist/ including .wasm files
+!dist/
+!dist/**
+!dist/wasm/
+!dist/wasm/**
+src/
+scripts/
+tsconfig.json
+node_modules/
+*.tgz

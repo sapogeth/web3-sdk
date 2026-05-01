@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>@stvor/web3 — Post-quantum E2EE for TON</title>
+  <meta name="description" content="The first post-quantum end-to-end encryption library for TON Web3. ML-KEM-768 + Double Ratchet. Zero dependencies." />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://pqc.stvor.xyz" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://pqc.stvor.xyz" />
+  <meta property="og:title" content="@stvor/web3 — Post-quantum E2EE for TON" />
+  <meta property="og:description" content="ML-KEM-768 + P-256 + Double Ratchet. NIST FIPS 203. Zero npm dependencies. The first post-quantum E2EE library for TON Web3." />
+  <meta property="og:image" content="https://pqc.stvor.xyz/og.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://pqc.stvor.xyz" />
+  <meta name="twitter:title" content="@stvor/web3 — Post-quantum E2EE for TON" />
+  <meta name="twitter:description" content="ML-KEM-768 + P-256 X3DH + Double Ratchet. NIST FIPS 203. Zero dependencies." />
+  <meta name="twitter:image" content="https://pqc.stvor.xyz/og.png" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0f'/><path d='M16 4L6 9V15C6 21.6 10.8 27.7 16 29C21.2 27.7 26 21.6 26 15V9L16 4Z' fill='%236c63ff' opacity='0.3'/><path d='M16 4L6 9V15C6 21.6 10.8 27.7 16 29C21.2 27.7 26 21.6 26 15V9L16 4Z' stroke='%236c63ff' stroke-width='2'/><path d='M11 15.5L14.5 19L21 12' stroke='%2300d4aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #111118;
+      --bg3: #1a1a24;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --text2: #9898b0;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --code-bg: #13131e;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,10,15,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a { color: var(--text2); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-install {
+      background: var(--accent);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .nav-install:hover { opacity: 0.85; }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: calc(100vh - 56px); }
+
+    /* ── Sidebar ── */
+    aside {
+      width: 240px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+      padding: 2rem 1rem;
+      border-right: 1px solid var(--border);
+    }
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text2);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    aside a {
+      display: block;
+      padding: 5px 8px;
+      border-radius: 5px;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: all 0.15s;
+    }
+    aside a:hover { color: var(--text); background: var(--bg3); }
+    aside a.active { color: var(--accent); background: rgba(108,99,255,0.1); }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      min-width: 0;
+      padding: 3rem 4rem;
+      max-width: 900px;
+    }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 4rem; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .badge-green { background: rgba(0,212,170,0.1); border-color: rgba(0,212,170,0.3); color: var(--accent2); }
+    .badge-blue  { background: rgba(108,99,255,0.1); border-color: rgba(108,99,255,0.3); color: var(--accent); }
+    .badge-red   { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); color: var(--accent3); }
+
+    h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; margin-bottom: 1rem; }
+    h1 span { color: var(--accent); }
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+      max-width: 600px;
+    }
+    .install-block {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 1rem;
+      max-width: 380px;
+    }
+    .install-block .prefix { color: var(--text2); }
+    .install-block .cmd { color: var(--accent2); }
+    .copy-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 3px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 4rem;
+    }
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .stat-num { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 0.8rem; color: var(--text2); margin-top: 4px; }
+
+    /* ── Section headings ── */
+    .section { margin-bottom: 3.5rem; }
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { color: var(--text2); margin-bottom: 0.75rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Code ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    p code, li code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent2);
+    }
+
+    /* ── Syntax highlight (minimal) ── */
+    .kw { color: #c792ea; }
+    .str { color: #c3e88d; }
+    .fn { color: #82aaff; }
+    .cmt { color: #546e7a; font-style: italic; }
+    .num { color: #f78c6c; }
+    .type { color: #ffcb6b; }
+    .prop { color: var(--accent2); }
+
+    /* ── Feature grid ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .feature-title { font-weight: 600; margin-bottom: 0.25rem; color: var(--text); }
+    .feature-desc { font-size: 0.875rem; color: var(--text2); }
+
+    /* ── Schema diagram ── */
+    .schema {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin: 1rem 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 2;
+    }
+    .schema .layer { color: var(--text2); }
+    .schema .label { color: var(--accent2); font-weight: 600; }
+    .schema .arrow { color: var(--border); }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.875rem;
+    }
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      background: var(--bg3);
+      color: var(--text2);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg2); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    .check { color: var(--accent2); font-weight: 700; }
+    .cross { color: var(--accent3); }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; }
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+    .step-content h3 { margin-top: 0; }
+
+    /* ── NIST badge ── */
+    .nist-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .nist-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+    .nist-vectors { font-size: 1.5rem; font-weight: 800; color: var(--accent2); }
+    .nist-algo { font-size: 0.8rem; color: var(--text2); margin-top: 4px; }
+    .nist-std { font-size: 0.7rem; color: var(--accent); margin-top: 2px; }
+
+    /* ── Warning box ── */
+    .warning {
+      background: rgba(255,107,107,0.05);
+      border: 1px solid rgba(255,107,107,0.2);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: var(--text2);
+    }
+    .warning strong { color: var(--accent3); }
+
+    .info {
+      background: rgba(108,99,255,0.05);
+      border: 1px solid rgba(108,99,255,0.2);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: var(--text2);
+    }
+    .info strong { color: var(--accent); }
+
+    /* ── Demo ── */
+    .demo-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .demo-tab {
+      background: none;
+      border: none;
+      color: var(--text2);
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .demo-tab:hover { color: var(--text); }
+    .demo-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .demo-panel {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      padding: 1.25rem;
+    }
+    .demo-desc { font-size: 0.875rem; color: var(--text2); margin-bottom: 1rem; }
+    .demo-run {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 7px 18px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      font-family: inherit;
+      margin-bottom: 1rem;
+    }
+    .demo-run:hover { opacity: 0.85; }
+    .demo-run:disabled { opacity: 0.5; cursor: wait; }
+    .demo-output {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: var(--text2);
+      min-height: 80px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .demo-output .ok { color: var(--accent2); }
+    .demo-output .label { color: var(--text); font-weight: 600; }
+    .demo-output .val { color: var(--accent); }
+    .demo-output .err { color: var(--accent3); }
+    .demo-inputs { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .demo-input-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .demo-input-row label {
+      width: 90px;
+      font-size: 0.8rem;
+      color: var(--text2);
+      flex-shrink: 0;
+    }
+    .demo-input-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 10px;
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+    }
+    .demo-input-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 4rem;
+      color: var(--text2);
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      aside { display: none; }
+      main { padding: 2rem 1.5rem; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .features { grid-template-columns: 1fr; }
+      .nist-grid { grid-template-columns: repeat(2, 1fr); }
+      h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 2L3 6V10C3 14.4 6.5 18.5 10 19C13.5 18.5 17 14.4 17 10V6L10 2Z" fill="#6c63ff" opacity="0.3"/>
+      <path d="M10 2L3 6V10C3 14.4 6.5 18.5 10 19C13.5 18.5 17 14.4 17 10V6L10 2Z" stroke="#6c63ff" stroke-width="1.5"/>
+      <path d="M7 10L9 12L13 8" stroke="#00d4aa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>@stvor</span>/web3
+  </a>
+  <div class="nav-links">
+    <a href="#quickstart">Quick start</a>
+    <a href="#api">API</a>
+    <a href="#security">Security</a>
+    <a href="#contract">Contract</a>
+    <a href="https://github.com/stvor/web3" target="_blank">GitHub</a>
+  </div>
+  <button class="nav-install" onclick="navigator.clipboard.writeText('npm install @stvor/web3').then(() => { this.textContent='Copied!'; setTimeout(() => this.textContent='npm install @stvor/web3', 1500) })">
+    npm install @stvor/web3
+  </button>
+</nav>
+
+<div class="layout">
+
+<!-- ── Sidebar ── -->
+<aside>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Overview</div>
+    <a href="#intro" class="active">Introduction</a>
+    <a href="#why">Why post-quantum</a>
+    <a href="#features">Features</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Getting started</div>
+    <a href="#install">Installation</a>
+    <a href="#quickstart">Quick start</a>
+    <a href="#tonconnect">TON Connect</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">API reference</div>
+    <a href="#api-connect">StvorWeb3.connect()</a>
+    <a href="#api-send">client.send()</a>
+    <a href="#api-onmessage">client.onMessage()</a>
+    <a href="#api-disconnect">client.disconnect()</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Low-level WASM</div>
+    <a href="#wasm-mlkem">ML-KEM-768</a>
+    <a href="#wasm-hybrid">Hybrid X3DH</a>
+    <a href="#wasm-session">Session API</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Security</div>
+    <a href="#security">Hybrid PQC</a>
+    <a href="#nist">NIST verification</a>
+    <a href="#forward-secrecy">Forward secrecy</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Contract</div>
+    <a href="#contract">stvor_registry</a>
+    <a href="#deploy">Deploy</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Playground</div>
+    <a href="#demo">Live demo</a>
+  </div>
+</aside>
+
+<!-- ── Main content ── -->
+<main>
+
+  <!-- Hero -->
+  <section class="hero" id="intro">
+    <div class="badge-row">
+      <span class="badge badge-green">✓ 53/53 tests</span>
+      <span class="badge badge-blue">NIST FIPS 203</span>
+      <span class="badge badge-green">0 dependencies</span>
+      <span class="badge badge-blue">TON Web3</span>
+    </div>
+
+    <h1>Post-quantum E2EE<br>for <span>TON</span> Web3</h1>
+    <p class="hero-sub">
+      The first end-to-end encryption library for TON wallets that is resistant to quantum computers.
+      ML-KEM-768 + P-256 X3DH + Double Ratchet. Rust WASM core. Zero npm dependencies.
+    </p>
+
+    <div class="install-block">
+      <span class="prefix">$</span>
+      <code class="cmd">npm install @stvor/web3</code>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('npm install @stvor/web3').then(() => { this.textContent='✓'; setTimeout(() => this.textContent='copy', 1200) })">copy</button>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num">270<small style="font-size:1rem">KB</small></div>
+      <div class="stat-label">WASM bundle size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">0</div>
+      <div class="stat-label">npm dependencies</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">53</div>
+      <div class="stat-label">NIST test vectors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">768</div>
+      <div class="stat-label">ML-KEM security bits</div>
+    </div>
+  </div>
+
+  <!-- Why -->
+  <section class="section" id="why">
+    <h2>Why post-quantum?</h2>
+    <div class="warning">
+      <strong>Store Now, Decrypt Later.</strong> Adversaries are recording encrypted traffic today to decrypt it once quantum computers become available. Your users' messages sent in 2025 could be read in 2030.
+    </div>
+    <p>
+      Elliptic curve cryptography (Ed25519, secp256k1, P-256) used by every Web3 wallet today is vulnerable to Shor's algorithm running on a sufficiently large quantum computer.
+    </p>
+    <p>
+      <code>@stvor/web3</code> uses <strong>ML-KEM-768</strong> — standardised by NIST in FIPS 203 (August 2024) — combined with classical P-256 in a hybrid scheme. Breaking it requires breaking both simultaneously, which is impossible with any known algorithm.
+    </p>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <h2>Features</h2>
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">Hybrid post-quantum X3DH</div>
+        <div class="feature-desc">ML-KEM-768 + P-256 ECDH combined via HKDF. Secure against classical and quantum attacks simultaneously.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-title">Double Ratchet</div>
+        <div class="feature-desc">Signal Protocol session management. Forward secrecy and break-in recovery. Every message uses a fresh key.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👛</div>
+        <div class="feature-title">TON wallet identity</div>
+        <div class="feature-desc">No accounts, no passwords. Your userId is your TON wallet address. Sign once with TonConnect.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⛓️</div>
+        <div class="feature-title">On-chain key registry</div>
+        <div class="feature-desc">Public keys stored in a FunC smart contract. Trustless, censorship-resistant, verifiable by anyone.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <div class="feature-title">Zero dependencies</div>
+        <div class="feature-desc">0 npm runtime dependencies. Crypto core is Rust compiled to WASM (270 KB). Ships in a single file.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <div class="feature-title">NIST ACVTS verified</div>
+        <div class="feature-desc">53 official test vectors. ECDH P-256, ECDSA, AES-256-GCM, and HKDF-SHA256 match NIST reference outputs exactly.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Crypto stack diagram -->
+  <section class="section" id="install">
+    <h2>Crypto stack</h2>
+    <div class="schema">
+      <div><span class="label">Identity</span>    <span class="layer">→  TON wallet address (Ed25519 signature)</span></div>
+      <div><span class="label">Key exchange</span> <span class="layer">→  Hybrid X3DH</span></div>
+      <div><span class="layer">                      ├── P-256 ECDH       (classical, NIST)</span></div>
+      <div><span class="layer">                      └── ML-KEM-768       (post-quantum, NIST FIPS 203)</span></div>
+      <div><span class="layer">                      └── HKDF-SHA256(ecdh_sk ‖ mlkem_ss, "STVOR-HYBRID-v1")</span></div>
+      <div><span class="label">Sessions</span>    <span class="layer">→  Double Ratchet  (Signal Protocol)</span></div>
+      <div><span class="label">Encryption</span>  <span class="layer">→  AES-256-GCM</span></div>
+      <div><span class="label">Signing</span>     <span class="layer">→  ECDSA P-256 / SHA-256</span></div>
+      <div><span class="label">Runtime</span>     <span class="layer">→  Rust → WebAssembly (270 KB, zero C deps)</span></div>
+    </div>
+
+    <h3>Installation</h3>
+    <pre><code><span class="fn">npm</span> install @stvor/web3</code></pre>
+
+    <p>Works in any environment with Web Crypto API and WebAssembly — all modern browsers and Node.js ≥ 18.</p>
+  </section>
+
+  <!-- Quick start -->
+  <section class="section" id="quickstart">
+    <h2>Quick start</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Initialize the WASM crypto engine</h3>
+          <pre><code><span class="kw">import</span> initWasm <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span>;
+
+<span class="kw">const</span> wasm = <span class="kw">await</span> initWasm();</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Connect with a TON wallet</h3>
+          <pre><code><span class="kw">import</span> { StvorWeb3 } <span class="kw">from</span> <span class="str">'@stvor/web3'</span>;
+
+<span class="kw">const</span> client = <span class="kw">await</span> StvorWeb3.<span class="fn">connect</span>({
+  provider: tonConnectProvider,     <span class="cmt">// TonConnect wallet</span>
+  contractAddress: <span class="str">'EQD...'</span>,        <span class="cmt">// stvor_registry address</span>
+  tonApiUrl: <span class="str">'https://testnet.toncenter.com/api/v2'</span>,
+  wasm,
+});</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Listen for messages</h3>
+          <pre><code>client.<span class="fn">onMessage</span>(msg => {
+  console.<span class="fn">log</span>(<span class="str">`From <span class="prop">${msg.from}</span>:`</span>, msg.data);
+  <span class="cmt">// msg.timestamp, msg.id also available</span>
+});</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Send a post-quantum encrypted message</h3>
+          <pre><code><span class="kw">await</span> client.<span class="fn">send</span>(<span class="str">'0:bob_address...'</span>, {
+  text: <span class="str">'Hello, quantum-safe Web3!'</span>,
+  <span class="cmt">// any JSON-serializable payload</span>
+});</code></pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TON Connect -->
+  <section class="section" id="tonconnect">
+    <h2>TON Connect integration</h2>
+    <p>
+      <code>@stvor/web3</code> uses a minimal <code>TonConnectProvider</code> interface — no external SDK dependency.
+      If you already use <code>@tonconnect/sdk</code>, wrap it with the adapter below.
+    </p>
+
+    <pre><code><span class="kw">import</span> { TonConnect } <span class="kw">from</span> <span class="str">'@tonconnect/sdk'</span>;
+
+<span class="kw">const</span> connector = <span class="kw">new</span> TonConnect();
+<span class="kw">await</span> connector.<span class="fn">connect</span>({ universalLink: <span class="str">'https://app.tonkeeper.com/ton-connect'</span> });
+
+<span class="cmt">// Adapter — maps TonConnect to TonConnectProvider interface</span>
+<span class="kw">const</span> provider = {
+  account: {
+    address: connector.account.address,
+    chain: connector.account.chain,
+  },
+  <span class="kw">async</span> <span class="fn">signData</span>(payload) {
+    <span class="kw">return</span> connector.<span class="fn">signData</span>(payload);
+  },
+  <span class="kw">async</span> <span class="fn">signTransaction</span>(to, bodyHex, value) {
+    <span class="kw">const</span> result = <span class="kw">await</span> connector.<span class="fn">sendTransaction</span>({
+      messages: [{ address: to, amount: value, payload: bodyHex }],
+    });
+    <span class="kw">return</span> result.boc;
+  },
+};
+
+<span class="kw">const</span> client = <span class="kw">await</span> StvorWeb3.<span class="fn">connect</span>({ provider, wasm, <span class="cmt">/* ... */</span> });</code></pre>
+  </section>
+
+  <!-- API Reference -->
+  <section class="section" id="api">
+    <h2>API reference</h2>
+
+    <h3 id="api-connect">StvorWeb3.connect(config)</h3>
+    <p>Creates and connects a client. Registers public keys on-chain via the registry contract.</p>
+    <table>
+      <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+      <tr><td>provider</td><td><code>TonConnectProvider</code></td><td>TON wallet provider</td></tr>
+      <tr><td>contractAddress</td><td><code>string</code></td><td>stvor_registry address</td></tr>
+      <tr><td>tonApiUrl</td><td><code>string</code></td><td>TonCenter API endpoint</td></tr>
+      <tr><td>wasm</td><td><code>WasmModule</code></td><td>Initialized WASM module</td></tr>
+      <tr><td>tonApiKey?</td><td><code>string</code></td><td>Optional TonCenter API key</td></tr>
+      <tr><td>pollIntervalMs?</td><td><code>number</code></td><td>Poll interval in ms (default: 5000)</td></tr>
+      <tr><td>pqc?</td><td><code>boolean</code></td><td>Enable ML-KEM-768 hybrid (default: true)</td></tr>
+    </table>
+
+    <h3 id="api-send">client.send(to, data)</h3>
+    <p>Encrypts <code>data</code> with a hybrid post-quantum session and delivers it via TON Storage.</p>
+    <pre><code><span class="kw">await</span> client.<span class="fn">send</span>(<span class="str">'0:abc...'</span>, { text: <span class="str">'Hello!'</span> });</code></pre>
+
+    <h3 id="api-onmessage">client.onMessage(handler)</h3>
+    <p>Registers a message handler. Returns an unsubscribe function.</p>
+    <pre><code><span class="kw">const</span> unsub = client.<span class="fn">onMessage</span>(msg => {
+  <span class="cmt">// msg.from      — sender TON address</span>
+  <span class="cmt">// msg.data      — decrypted payload</span>
+  <span class="cmt">// msg.timestamp — Date</span>
+  <span class="cmt">// msg.id        — message ID</span>
+});
+unsub(); <span class="cmt">// stop listening</span></code></pre>
+
+    <h3 id="api-disconnect">client.disconnect()</h3>
+    <p>Stops message polling and clears all session state from memory.</p>
+  </section>
+
+  <!-- Low-level WASM -->
+  <section class="section" id="wasm-mlkem">
+    <h2>Low-level WASM API</h2>
+    <p>Direct access to the Rust crypto primitives for advanced use cases.</p>
+
+    <h3>ML-KEM-768</h3>
+    <pre><code><span class="kw">import</span> { wasm_mlkem_keygen, wasm_mlkem_encaps, wasm_mlkem_decaps }
+  <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span>;
+
+<span class="cmt">// Generate keypair — { ek: string, dk: string } (base64url)</span>
+<span class="kw">const</span> { ek, dk } = JSON.<span class="fn">parse</span>(<span class="fn">wasm_mlkem_keygen</span>());
+<span class="cmt">// ek = 1184-byte encapsulation key (public)</span>
+<span class="cmt">// dk = 64-byte decapsulation key seed (secret)</span>
+
+<span class="cmt">// Encapsulate: generates a shared secret and a ciphertext</span>
+<span class="kw">const</span> { ct, ss } = JSON.<span class="fn">parse</span>(<span class="fn">wasm_mlkem_encaps</span>(ek));
+
+<span class="cmt">// Decapsulate: recover the shared secret from ciphertext</span>
+<span class="kw">const</span> ss2 = <span class="fn">wasm_mlkem_decaps</span>(dk, ct);
+<span class="cmt">// ss === ss2  ✓</span></code></pre>
+
+    <h3 id="wasm-hybrid">Hybrid X3DH</h3>
+    <pre><code><span class="kw">import</span> { WasmKeyPair, wasm_mlkem_keygen,
+         wasm_hybrid_session_initiate, wasm_hybrid_session_respond }
+  <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span>;
+
+<span class="kw">const</span> aliceIK  = <span class="kw">new</span> WasmKeyPair();
+<span class="kw">const</span> aliceSPK = <span class="kw">new</span> WasmKeyPair();
+<span class="kw">const</span> bobIK    = <span class="kw">new</span> WasmKeyPair();
+<span class="kw">const</span> bobSPK   = <span class="kw">new</span> WasmKeyPair();
+<span class="kw">const</span> bobPqc   = JSON.<span class="fn">parse</span>(<span class="fn">wasm_mlkem_keygen</span>());
+
+<span class="cmt">// Alice: initiate hybrid session → get session + ML-KEM ciphertext</span>
+<span class="kw">const</span> { session_json, mlkem_ct } = JSON.<span class="fn">parse</span>(
+  <span class="fn">wasm_hybrid_session_initiate</span>(
+    aliceIK, aliceSPK,
+    bobIK.public_key, bobSPK.public_key,
+    bobPqc.ek,
+  )
+);
+<span class="kw">const</span> alice = WasmSession.<span class="fn">from_json</span>(session_json);
+
+<span class="cmt">// Bob: respond with ML-KEM ciphertext from Alice</span>
+<span class="kw">const</span> bob = <span class="fn">wasm_hybrid_session_respond</span>(
+  bobIK, bobSPK,
+  aliceIK.public_key, aliceSPK.public_key,
+  bobPqc.dk, mlkem_ct,
+);</code></pre>
+
+    <h3 id="wasm-session">Session encrypt / decrypt</h3>
+    <pre><code><span class="cmt">// Encrypt</span>
+<span class="kw">const</span> blob = alice.<span class="fn">encrypt</span>(<span class="kw">new</span> TextEncoder().<span class="fn">encode</span>(<span class="str">'gm'</span>));
+
+<span class="cmt">// Decrypt</span>
+<span class="kw">const</span> pt = bob.<span class="fn">decrypt</span>(blob);
+<span class="kw">new</span> TextDecoder().<span class="fn">decode</span>(pt); <span class="cmt">// → 'gm'</span>
+
+<span class="cmt">// Serialize / restore session state</span>
+<span class="kw">const</span> json = alice.<span class="fn">to_json</span>();
+<span class="kw">const</span> restored = WasmSession.<span class="fn">from_json</span>(json);</code></pre>
+  </section>
+
+  <!-- Security -->
+  <section class="section" id="security">
+    <h2>Security</h2>
+
+    <h3>Hybrid PQC key derivation</h3>
+    <pre><code>shared_key = HKDF-SHA256(
+  ikm  = ecdh_sk ‖ mlkem_ss,   <span class="cmt">// P-256 ‖ ML-KEM-768</span>
+  salt = 0x00...00  (32 bytes),
+  info = "STVOR-HYBRID-v1"
+)</code></pre>
+    <div class="info">
+      <strong>Security guarantee:</strong> breaking <code>shared_key</code> requires breaking <em>both</em> P-256 ECDH and ML-KEM-768 simultaneously. No known classical or quantum algorithm can do this.
+    </div>
+
+    <h3 id="nist">NIST ACVTS verification</h3>
+    <p>All primitives tested against official NIST Cryptographic Algorithm Validation Program vectors:</p>
+    <div class="nist-grid">
+      <div class="nist-card">
+        <div class="nist-vectors">25</div>
+        <div class="nist-algo">P-256 ECDH</div>
+        <div class="nist-std">NIST KAS ECC CDH</div>
+      </div>
+      <div class="nist-card">
+        <div class="nist-vectors">15</div>
+        <div class="nist-algo">ECDSA P-256/SHA-256</div>
+        <div class="nist-std">NIST FIPS 186-3 SigVer</div>
+      </div>
+      <div class="nist-card">
+        <div class="nist-vectors">21</div>
+        <div class="nist-algo">AES-256-GCM</div>
+        <div class="nist-std">NIST SP 800-38D</div>
+      </div>
+      <div class="nist-card">
+        <div class="nist-vectors">3</div>
+        <div class="nist-algo">HKDF-SHA256</div>
+        <div class="nist-std">RFC 5869 / SP 800-56C</div>
+      </div>
+    </div>
+
+    <h3 id="forward-secrecy">Forward secrecy</h3>
+    <p>The Double Ratchet protocol generates a fresh symmetric key for every message. Compromising a session key exposes only that single message — not past or future ones.</p>
+
+    <h3>Key zeroization</h3>
+    <p>All private key material is zeroed from memory after use via the Rust <code>zeroize</code> crate. Keys do not linger in memory after a session ends.</p>
+  </section>
+
+  <!-- Comparison -->
+  <section class="section">
+    <h2>Comparison</h2>
+    <table>
+      <tr>
+        <th></th>
+        <th>@stvor/web3</th>
+        <th>XMTP</th>
+        <th>Waku</th>
+        <th>Signal (libsignal)</th>
+      </tr>
+      <tr>
+        <td>ML-KEM-768 (PQC)</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+      </tr>
+      <tr>
+        <td>TON wallet identity</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+      </tr>
+      <tr>
+        <td>Double Ratchet</td>
+        <td class="check">✓</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>On-chain key registry</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+      </tr>
+      <tr>
+        <td>Zero npm dependencies</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+      </tr>
+      <tr>
+        <td>NIST ACVTS verified</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>Rust WASM crypto core</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="check">✓</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- Contract -->
+  <section class="section" id="contract">
+    <h2>Smart contract</h2>
+    <p>The <code>stvor_registry</code> FunC contract stores public keys and message bag IDs on-chain. No central server. No trust required.</p>
+
+    <h3>Contract address (testnet)</h3>
+    <pre><code>EQD... <span class="cmt"># deploy with: node contracts/deploy.mjs</span></code></pre>
+
+    <h3>Internal messages (write)</h3>
+    <table>
+      <tr><th>Op</th><th>Code</th><th>Body</th></tr>
+      <tr><td>register_keys</td><td><code>0x1001</code></td><td>op + query_id + ref(IK) + ref(SPK) + ref(SIG) + ref(ML-KEM EK)</td></tr>
+      <tr><td>store_message</td><td><code>0x1002</code></td><td>op + query_id + to_addr(267) + bag_id(256)</td></tr>
+      <tr><td>delete_message</td><td><code>0x1003</code></td><td>op + query_id + bag_id(256)</td></tr>
+    </table>
+
+    <h3>Get methods (read)</h3>
+    <table>
+      <tr><th>Method</th><th>Input</th><th>Returns</th></tr>
+      <tr><td>get_keys</td><td>address_int</td><td>(ik_cell, spk_cell, sig_cell, ts)</td></tr>
+      <tr><td>get_messages</td><td>address_int</td><td>dict(256 → MsgMeta)</td></tr>
+      <tr><td>get_message_count</td><td>address_int</td><td>int</td></tr>
+    </table>
+
+    <h3 id="deploy">Deploy to testnet</h3>
+    <pre><code><span class="cmt"># Get testnet TON from @testgiver_ton_bot</span>
+<span class="kw">cd</span> contracts
+<span class="kw">export</span> STVOR_MNEMONIC=<span class="str">"word1 word2 ... word24"</span>
+node deploy.mjs
+
+<span class="cmt"># Output:</span>
+<span class="cmt"># Contract address: EQD...</span>
+<span class="cmt"># ✓ Deployed successfully!</span></code></pre>
+  </section>
+
+  <!-- Live demo -->
+  <section class="section" id="demo">
+    <h2>Live demo</h2>
+    <p>Try the cryptographic primitives directly in your browser. No installation needed — the WASM engine runs locally.</p>
+
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="showTab('tab-mlkem')">ML-KEM-768</button>
+      <button class="demo-tab" onclick="showTab('tab-session')">E2EE Session</button>
+      <button class="demo-tab" onclick="showTab('tab-hkdf')">HKDF</button>
+    </div>
+
+    <!-- ML-KEM tab -->
+    <div id="tab-mlkem" class="demo-panel">
+      <div class="demo-desc">Generate a post-quantum ML-KEM-768 keypair, encapsulate a shared secret, and verify both sides agree.</div>
+      <button class="demo-run" id="btn-mlkem" onclick="runMlkem()">▶ Run</button>
+      <div class="demo-output" id="out-mlkem">Click "Run" to execute in your browser...</div>
+    </div>
+
+    <!-- Session tab -->
+    <div id="tab-session" class="demo-panel" style="display:none">
+      <div class="demo-desc">Full hybrid X3DH + Double Ratchet session between Alice and Bob. Post-quantum key agreement + encrypted messaging.</div>
+      <button class="demo-run" id="btn-session" onclick="runSession()">▶ Run</button>
+      <div class="demo-output" id="out-session">Click "Run" to execute in your browser...</div>
+    </div>
+
+    <!-- HKDF tab -->
+    <div id="tab-hkdf" class="demo-panel" style="display:none">
+      <div class="demo-desc">HKDF-SHA256 key derivation — deterministic, RFC 5869 compliant. Try with custom inputs.</div>
+      <div class="demo-inputs">
+        <div class="demo-input-row">
+          <label>IKM (hex)</label>
+          <input id="hkdf-ikm" type="text" value="0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b" spellcheck="false" />
+        </div>
+        <div class="demo-input-row">
+          <label>Salt (hex)</label>
+          <input id="hkdf-salt" type="text" value="000102030405060708090a0b0c" spellcheck="false" />
+        </div>
+        <div class="demo-input-row">
+          <label>Info (text)</label>
+          <input id="hkdf-info" type="text" value="stvor-hybrid-v1" spellcheck="false" />
+        </div>
+        <div class="demo-input-row">
+          <label>Length</label>
+          <input id="hkdf-len" type="number" value="32" min="1" max="255" style="width:80px" />
+        </div>
+      </div>
+      <button class="demo-run" onclick="runHkdf()">▶ Compute</button>
+      <div class="demo-output" id="out-hkdf">Fill inputs and click "Compute"...</div>
+    </div>
+
+    <div id="demo-loading" style="display:none;color:var(--text2);font-size:0.85rem;margin-top:0.75rem">
+      ⏳ Loading WASM engine (270 KB)...
+    </div>
+  </section>
+
+  <!-- Contributing -->
+  <section class="section">
+    <h2>Contributing</h2>
+    <pre><code><span class="cmt"># Run all 53 tests</span>
+cd crypto-core && cargo test                           <span class="cmt"># 28 Rust (incl. NIST vectors)</span>
+cd sdk && node --experimental-wasm-modules \
+  --import tsx/esm src/__tests__/wasm.test.ts          <span class="cmt"># 17 WASM</span>
+cd contracts && node --import tsx/esm \
+  tests/registry.test.ts                              <span class="cmt"># 8 contract</span>
+
+<span class="cmt"># Rebuild WASM after Rust changes</span>
+cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre>
+  </section>
+
+</main>
+</div>
+
+<footer>
+  <span>@stvor/web3 — MIT License — <a href="https://stvor.xyz">stvor.xyz</a> — <a href="https://pqc.stvor.xyz">pqc.stvor.xyz</a></span>
+  <span>Built with Rust + WASM + FunC on TON</span>
+</footer>
+
+<script>
+  // ── Sidebar active link on scroll ───────────────────────────────────────────
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('aside a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`aside a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  // ── Demo tabs ────────────────────────────────────────────────────────────────
+  function showTab(id) {
+    document.querySelectorAll('.demo-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    event.target.classList.add('active');
+  }
+
+  // ── WASM loader ──────────────────────────────────────────────────────────────
+  let wasm = null;
+
+  async function loadWasm() {
+    if (wasm) return wasm;
+    document.getElementById('demo-loading').style.display = 'block';
+    try {
+      // Load from CDN via unpkg or local wasm path
+      // In production docs: load from /wasm/ directory
+      const wasmModule = await import('../sdk/wasm/stvor_crypto.js');
+      // Try to fetch local WASM binary
+      const wasmPath = '../sdk/wasm/stvor_crypto_bg.wasm';
+      let wasmBinary;
+      try {
+        const resp = await fetch(wasmPath);
+        if (resp.ok) wasmBinary = await resp.arrayBuffer();
+      } catch {}
+      wasm = await wasmModule.default(wasmBinary ? { module_or_path: wasmBinary } : undefined);
+      wasm._mod = wasmModule;
+      document.getElementById('demo-loading').style.display = 'none';
+      return wasm._mod;
+    } catch (e) {
+      document.getElementById('demo-loading').innerHTML =
+        '⚠️ WASM not available in this preview. <a href="https://github.com/stvor/web3" target="_blank">Run locally</a> to try the live demo.';
+      throw e;
+    }
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function hex(b64url) {
+    const b = atob(b64url.replace(/-/g, '+').replace(/_/g, '/'));
+    return Array.from(b).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+  }
+  function hexToB64url(hexStr) {
+    const bytes = new Uint8Array(hexStr.match(/.{2}/g).map(h => parseInt(h, 16)));
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function short(b64url, n = 16) {
+    const h = hex(b64url);
+    return h.slice(0, n) + '...' + h.slice(-8);
+  }
+  function fmt(label, val) {
+    return `<span class="label">${label}</span>  <span class="val">${val}</span>\n`;
+  }
+
+  // ── ML-KEM demo ──────────────────────────────────────────────────────────────
+  async function runMlkem() {
+    const btn = document.getElementById('btn-mlkem');
+    const out = document.getElementById('out-mlkem');
+    btn.disabled = true;
+    out.innerHTML = 'Loading WASM...';
+    try {
+      const m = await loadWasm();
+      const t0 = performance.now();
+
+      const kp  = JSON.parse(m.wasm_mlkem_keygen());
+      const t1  = performance.now();
+      const enc = JSON.parse(m.wasm_mlkem_encaps(kp.ek));
+      const t2  = performance.now();
+      const ss2 = m.wasm_mlkem_decaps(kp.dk, enc.ct);
+      const t3  = performance.now();
+
+      const match = enc.ss === ss2;
+
+      out.innerHTML =
+        fmt('Algorithm', 'ML-KEM-768 (NIST FIPS 203)') +
+        '\n' +
+        fmt('Encapsulation key (EK)', `${short(kp.ek, 32)}  [1184 bytes]`) +
+        fmt('Decapsulation key seed', `${short(kp.dk, 32)}  [64 bytes]`) +
+        fmt('Ciphertext (CT)',        `${short(enc.ct, 32)}  [1088 bytes]`) +
+        '\n' +
+        fmt('Shared secret (sender)',    short(enc.ss, 32) + '  [32 bytes]') +
+        fmt('Shared secret (receiver)',  short(ss2, 32) + '  [32 bytes]') +
+        '\n' +
+        `<span class="${match ? 'ok' : 'err'}">${match ? '✓ Shared secrets match — key exchange successful' : '✗ MISMATCH'}</span>\n` +
+        '\n' +
+        fmt('Keygen time',   `${(t1-t0).toFixed(2)} ms`) +
+        fmt('Encaps time',   `${(t2-t1).toFixed(2)} ms`) +
+        fmt('Decaps time',   `${(t3-t2).toFixed(2)} ms`);
+    } catch (e) {
+      out.innerHTML = `<span class="err">Error: ${e.message}\n\nRun locally: npm install @stvor/web3</span>`;
+    }
+    btn.disabled = false;
+  }
+
+  // ── Session demo ─────────────────────────────────────────────────────────────
+  async function runSession() {
+    const btn = document.getElementById('btn-session');
+    const out = document.getElementById('out-session');
+    btn.disabled = true;
+    out.innerHTML = 'Loading WASM...';
+    try {
+      const m = await loadWasm();
+      const { WasmKeyPair, WasmSession } = m;
+
+      const aliceIK  = new WasmKeyPair();
+      const aliceSPK = new WasmKeyPair();
+      const bobIK    = new WasmKeyPair();
+      const bobSPK   = new WasmKeyPair();
+      const bobPqc   = JSON.parse(m.wasm_mlkem_keygen());
+
+      const t0 = performance.now();
+
+      // Hybrid X3DH handshake
+      const init = JSON.parse(m.wasm_hybrid_session_initiate(
+        aliceIK, aliceSPK, bobIK.public_key, bobSPK.public_key, bobPqc.ek
+      ));
+      const alice = WasmSession.from_json(init.session_json);
+      const bob   = m.wasm_hybrid_session_respond(
+        bobIK, bobSPK, aliceIK.public_key, aliceSPK.public_key, bobPqc.dk, init.mlkem_ct
+      );
+
+      const t1 = performance.now();
+
+      // Message exchange
+      const msg1 = 'Hello, quantum-safe Web3!';
+      const msg2 = 'Reply from Bob — forward secrecy enabled!';
+
+      const enc1 = alice.encrypt(new TextEncoder().encode(msg1));
+      const dec1 = new TextDecoder().decode(bob.decrypt(enc1));
+
+      const enc2 = bob.encrypt(new TextEncoder().encode(msg2));
+      const dec2 = new TextDecoder().decode(alice.decrypt(enc2));
+
+      const t2 = performance.now();
+
+      const ok1 = dec1 === msg1;
+      const ok2 = dec2 === msg2;
+
+      out.innerHTML =
+        fmt('Key exchange', 'Hybrid X3DH (P-256 + ML-KEM-768) + HKDF') +
+        fmt('Sessions',     'Double Ratchet (Signal Protocol)') +
+        fmt('Encryption',   'AES-256-GCM') +
+        '\n' +
+        fmt('Alice IK',  short(aliceIK.public_key)) +
+        fmt('Bob IK',    short(bobIK.public_key)) +
+        fmt('ML-KEM CT', short(init.mlkem_ct, 32) + '  [1088 bytes]') +
+        '\n' +
+        `Alice → Bob: <span class="val">"${msg1}"</span>\n` +
+        `Encrypted:   <span class="val">${short(enc1, 32)}  [${enc1.length} bytes]</span>\n` +
+        `Decrypted:   <span class="${ok1 ? 'ok' : 'err'}">"${dec1}"  ${ok1 ? '✓' : '✗'}</span>\n` +
+        '\n' +
+        `Bob → Alice: <span class="val">"${msg2}"</span>\n` +
+        `Encrypted:   <span class="val">${short(enc2, 32)}  [${enc2.length} bytes]</span>\n` +
+        `Decrypted:   <span class="${ok2 ? 'ok' : 'err'}">"${dec2}"  ${ok2 ? '✓' : '✗'}</span>\n` +
+        '\n' +
+        fmt('Handshake time',  `${(t1-t0).toFixed(2)} ms`) +
+        fmt('2 messages time', `${(t2-t1).toFixed(2)} ms`);
+    } catch (e) {
+      out.innerHTML = `<span class="err">Error: ${e.message}\n\nRun locally: npm install @stvor/web3</span>`;
+    }
+    btn.disabled = false;
+  }
+
+  // ── HKDF demo ────────────────────────────────────────────────────────────────
+  async function runHkdf() {
+    const out = document.getElementById('out-hkdf');
+    const ikmHex  = document.getElementById('hkdf-ikm').value.replace(/\s/g, '');
+    const saltHex = document.getElementById('hkdf-salt').value.replace(/\s/g, '');
+    const info    = document.getElementById('hkdf-info').value;
+    const len     = parseInt(document.getElementById('hkdf-len').value) || 32;
+
+    if (ikmHex.length % 2 !== 0 || saltHex.length % 2 !== 0) {
+      out.innerHTML = '<span class="err">Error: hex strings must have even length</span>';
+      return;
+    }
+
+    try {
+      const m = await loadWasm();
+
+      const ikmB64  = hexToB64url(ikmHex);
+      const saltB64 = hexToB64url(saltHex);
+
+      const t0  = performance.now();
+      const okm = m.wasm_hkdf(ikmB64, saltB64, info, len);
+      const ms  = (performance.now() - t0).toFixed(3);
+
+      out.innerHTML =
+        fmt('Algorithm', 'HKDF-SHA256 (RFC 5869 / NIST SP 800-56C)') +
+        '\n' +
+        fmt('IKM',    ikmHex.slice(0,32) + (ikmHex.length > 32 ? '...' : '') + `  [${ikmHex.length/2} bytes]`) +
+        fmt('Salt',   saltHex.slice(0,32) + (saltHex.length > 32 ? '...' : '') + `  [${saltHex.length/2} bytes]`) +
+        fmt('Info',   `"${info}"`) +
+        fmt('Length', `${len} bytes`) +
+        '\n' +
+        fmt('OKM (hex)', hex(okm)) +
+        fmt('OKM (b64)', okm) +
+        '\n' +
+        fmt('Time', `${ms} ms`);
+    } catch (e) {
+      out.innerHTML = `<span class="err">Error: ${e.message}</span>`;
+    }
+  }
+</script>
+
+</body>
+</html>

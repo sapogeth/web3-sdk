@@ -1,0 +1,171 @@
+;; STVOR Registry — FunC Smart Contract v2
+;;
+;; Storage (c4):
+;;   keys_dict : dict(267, ref)  ;; address → KeyRecord
+;;   msgs_dict : dict(267, ref)  ;; address → MsgList
+;;
+;; KeyRecord layout (main cell + 4 refs):
+;;   Main: ts(64)
+;;   ref0: ik(520)       P-256 identity key
+;;   ref1: spk(520)      P-256 signed pre-key
+;;   ref2: sig(512)      ECDSA DER signature of SPK
+;;   ref3: mlkem_ek(?)   ML-KEM-768 encapsulation key (1184 bytes = 9472 bits)
+;;                       stored as a chain of cells (each ≤ 1023 bits)
+;;
+;; MsgList: count(32) | bag_dict (dict256 → MsgMeta ref)
+;; MsgMeta: from_addr(267) | ts(64)
+
+#include "stdlib.fc";
+
+const int op::register_keys  = 0x1001;
+const int op::store_message  = 0x1002;
+const int op::delete_message = 0x1003;
+
+;; ─── Storage ──────────────────────────────────────────────────────────────────
+
+(cell, cell) load_data() inline {
+    var ds = get_data().begin_parse();
+    cell keys_dict = ds~load_dict();
+    cell msgs_dict = ds~load_dict();
+    return (keys_dict, msgs_dict);
+}
+
+() save_data(cell keys_dict, cell msgs_dict) impure inline {
+    set_data(
+        begin_cell()
+            .store_dict(keys_dict)
+            .store_dict(msgs_dict)
+        .end_cell()
+    );
+}
+
+;; ─── Internal ─────────────────────────────────────────────────────────────────
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if (in_msg_body.slice_empty?()) { return (); }
+
+    slice cs  = in_msg_full.begin_parse();
+    int flags = cs~load_uint(4);
+    if (flags & 1) { return (); }
+
+    slice sender = cs~load_msg_addr();
+    int op       = in_msg_body~load_uint(32);
+    int query_id = in_msg_body~load_uint(64);
+
+    (cell keys_dict, cell msgs_dict) = load_data();
+
+    ;; ── register_keys ─────────────────────────────────────────────────────
+    if (op == op::register_keys) {
+        ;; refs: ref0=ik(520), ref1=spk(520), ref2=sig(512), ref3=mlkem_ek (cell chain)
+        cell ik_cell   = in_msg_body~load_ref();
+        cell spk_cell  = in_msg_body~load_ref();
+        cell sig_cell  = in_msg_body~load_ref();
+        ;; ML-KEM EK is optional — present if there is a 4th ref
+        cell mlkem_cell = in_msg_body.slice_refs() > 0
+            ? in_msg_body~load_ref()
+            : begin_cell().end_cell();
+
+        cell key_record = begin_cell()
+            .store_uint(now(), 64)
+            .store_ref(ik_cell)
+            .store_ref(spk_cell)
+            .store_ref(sig_cell)
+            .store_ref(mlkem_cell)
+        .end_cell();
+
+        keys_dict~udict_set_ref(267, sender.preload_uint(267), key_record);
+        save_data(keys_dict, msgs_dict);
+        return ();
+    }
+
+    ;; ── store_message ─────────────────────────────────────────────────────
+    if (op == op::store_message) {
+        int to_addr = in_msg_body~load_uint(267);
+        int bag_id  = in_msg_body~load_uint(256);
+
+        cell meta = begin_cell()
+            .store_slice(sender)
+            .store_uint(now(), 64)
+        .end_cell();
+
+        (cell msg_list, int found) = msgs_dict.udict_get_ref?(267, to_addr);
+        int count    = 0;
+        cell bag_dict = new_dict();
+
+        if (found) {
+            slice ml = msg_list.begin_parse();
+            count    = ml~load_uint(32);
+            bag_dict = ml~load_dict();
+        }
+
+        bag_dict~udict_set_ref(256, bag_id, meta);
+
+        msgs_dict~udict_set_ref(267, to_addr,
+            begin_cell()
+                .store_uint(count + 1, 32)
+                .store_dict(bag_dict)
+            .end_cell()
+        );
+        save_data(keys_dict, msgs_dict);
+        return ();
+    }
+
+    ;; ── delete_message ────────────────────────────────────────────────────
+    if (op == op::delete_message) {
+        int bag_id  = in_msg_body~load_uint(256);
+        int my_addr = sender.preload_uint(267);
+
+        (cell msg_list, int found) = msgs_dict.udict_get_ref?(267, my_addr);
+        if (found) {
+            slice ml      = msg_list.begin_parse();
+            int count     = ml~load_uint(32);
+            cell bag_dict = ml~load_dict();
+
+            (bag_dict, _) = bag_dict.udict_delete?(256, bag_id);
+
+            msgs_dict~udict_set_ref(267, my_addr,
+                begin_cell()
+                    .store_uint(max(0, count - 1), 32)
+                    .store_dict(bag_dict)
+                .end_cell()
+            );
+            save_data(keys_dict, msgs_dict);
+        }
+        return ();
+    }
+}
+
+;; ─── Get methods ──────────────────────────────────────────────────────────────
+
+;; get_keys(addr_int) → (ik_cell, spk_cell, sig_cell, mlkem_cell, ts)
+(cell, cell, cell, cell, int) get_keys(int addr_int) method_id {
+    (cell keys_dict, _) = load_data();
+    (cell kr, int found) = keys_dict.udict_get_ref?(267, addr_int);
+    throw_unless(404, found);
+
+    slice s       = kr.begin_parse();
+    int ts        = s~load_uint(64);
+    cell ik_c     = s~load_ref();
+    cell spk_c    = s~load_ref();
+    cell sig_c    = s~load_ref();
+    cell mlkem_c  = s.slice_refs() > 0 ? s~load_ref() : begin_cell().end_cell();
+    return (ik_c, spk_c, sig_c, mlkem_c, ts);
+}
+
+;; get_message_count(addr_int) → int
+int get_message_count(int addr_int) method_id {
+    (_, cell msgs_dict) = load_data();
+    (cell ml, int found) = msgs_dict.udict_get_ref?(267, addr_int);
+    if (~ found) { return 0; }
+    return ml.begin_parse().preload_uint(32);
+}
+
+;; get_messages(addr_int) → cell (dict256 → MsgMeta)
+cell get_messages(int addr_int) method_id {
+    (_, cell msgs_dict) = load_data();
+    (cell ml, int found) = msgs_dict.udict_get_ref?(267, addr_int);
+    if (~ found) { return new_dict(); }
+    slice s = ml.begin_parse();
+    s~load_uint(32);
+    return s~load_dict();
+}

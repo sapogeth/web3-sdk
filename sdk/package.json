@@ -1,0 +1,86 @@
+{
+  "name": "@stvor/web3",
+  "version": "0.1.0",
+  "description": "Post-quantum E2EE for TON Web3. ML-KEM-768 + Double Ratchet. Zero dependencies.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./wasm": {
+      "import": {
+        "types": "./dist/wasm/stvor_crypto.d.ts",
+        "default": "./dist/wasm/stvor_crypto.js"
+      }
+    }
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/index.d.ts.map",
+    "dist/stvor.js",
+    "dist/stvor.d.ts",
+    "dist/stvor.d.ts.map",
+    "dist/ton-storage.js",
+    "dist/ton-storage.d.ts",
+    "dist/ton-storage.d.ts.map",
+    "dist/wallet.js",
+    "dist/wallet.d.ts",
+    "dist/wallet.d.ts.map",
+    "dist/wasm/stvor_crypto.js",
+    "dist/wasm/stvor_crypto.d.ts",
+    "dist/wasm/stvor_crypto_bg.wasm",
+    "dist/wasm/stvor_crypto_bg.wasm.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && node scripts/copy-wasm.mjs",
+    "test": "node --experimental-wasm-modules --import tsx/esm src/__tests__/wasm.test.ts",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "web3",
+    "ton",
+    "e2ee",
+    "encryption",
+    "post-quantum",
+    "pqc",
+    "ml-kem",
+    "kyber",
+    "double-ratchet",
+    "signal-protocol",
+    "wallet",
+    "privacy",
+    "ton-connect",
+    "decentralised",
+    "zero-dependencies"
+  ],
+  "author": "Stvor <hello@stvor.xyz> (https://stvor.xyz)",
+  "license": "MIT",
+  "homepage": "https://pqc.stvor.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stvor/web3-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/stvor/web3-sdk/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

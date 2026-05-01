@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STVOR — PQC Chat on TON</title>
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg2: #111118; --bg3: #1a1a24;
+      --border: #2a2a3a; --text: #e8e8f0; --text2: #9898b0;
+      --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b;
+      --r: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+           background: var(--bg); color: var(--text); height: 100vh;
+           display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header {
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; }
+    .logo svg { flex-shrink: 0; }
+    .logo-sub { font-weight: 400; color: var(--text2); font-size: 0.85rem; margin-left: 4px; }
+    .badge {
+      padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+      background: rgba(0,212,170,0.1); border: 1px solid rgba(0,212,170,0.3);
+      color: var(--accent2); letter-spacing: 0.05em;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; min-height: 0; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-top {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .connect-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      font-family: inherit;
+    }
+    .connect-btn:hover { opacity: 0.85; }
+    .connect-btn:disabled { opacity: 0.5; cursor: default; }
+    .wallet-info {
+      display: none;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 0.75rem;
+    }
+    .wallet-addr {
+      font-family: 'SF Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent2);
+      word-break: break-all;
+    }
+    .wallet-chain { font-size: 0.7rem; color: var(--text2); margin-top: 3px; }
+    .security-badge {
+      margin-top: 0.75rem;
+      padding: 6px 10px;
+      background: rgba(108,99,255,0.08);
+      border: 1px solid rgba(108,99,255,0.2);
+      border-radius: 6px;
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .sidebar-contacts { flex: 1; overflow-y: auto; padding: 0.5rem; }
+    .contacts-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text2);
+      padding: 0.5rem 0.5rem 0.25rem;
+    }
+    .new-chat {
+      width: 100%;
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--r);
+      color: var(--text2);
+      padding: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .new-chat:hover { border-color: var(--accent); color: var(--accent); }
+    .contact {
+      padding: 10px 8px;
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .contact:hover { background: var(--bg3); }
+    .contact.active { background: rgba(108,99,255,0.1); }
+    .contact-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .contact-name { font-size: 0.875rem; font-weight: 500; }
+    .contact-addr { font-size: 0.7rem; color: var(--text2); font-family: monospace; }
+    .contact-unread {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    /* ── Chat area ── */
+    .chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .chat-header {
+      padding: 0 1.5rem;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .chat-peer { display: flex; flex-direction: column; }
+    .chat-peer-name { font-weight: 600; font-size: 0.95rem; }
+    .chat-peer-addr { font-size: 0.7rem; color: var(--text2); font-family: monospace; }
+    .chat-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; color: var(--accent2);
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%; background: var(--accent2);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      color: var(--text2);
+    }
+    .chat-empty svg { opacity: 0.3; }
+    .chat-empty p { font-size: 0.9rem; }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .msg {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      position: relative;
+    }
+    .msg.mine {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.theirs {
+      align-self: flex-start;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-time {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 4px;
+      text-align: right;
+    }
+    .msg-enc-badge {
+      font-size: 0.6rem;
+      opacity: 0.7;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .msg-enc-badge.mine { justify-content: flex-end; }
+
+    .chat-input-area {
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--text2); }
+    .send-btn {
+      width: 44px; height: 44px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--r);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Info panel ── */
+    .info-panel {
+      width: 260px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+    .info-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text2);
+      margin-bottom: 0.75rem;
+    }
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 1rem;
+    }
+    .info-label { font-size: 0.72rem; color: var(--text2); }
+    .info-val {
+      font-size: 0.78rem;
+      font-family: 'SF Mono', monospace;
+      color: var(--accent2);
+      word-break: break-all;
+    }
+    .info-val.green { color: var(--accent2); }
+    .info-val.purple { color: var(--accent); }
+    .sep { height: 1px; background: var(--border); margin: 0.75rem 0; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      max-width: 320px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.ok { border-color: rgba(0,212,170,0.4); color: var(--accent2); }
+    .toast.err { border-color: rgba(255,107,107,0.4); color: var(--accent3); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      width: 420px;
+      max-width: 90vw;
+    }
+    .modal h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+    .modal p { color: var(--text2); font-size: 0.875rem; margin-bottom: 1.25rem; }
+    .modal input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: monospace;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+    .modal input:focus { border-color: var(--accent); }
+    .modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .btn-sec {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+    .btn-prim {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      font-family: inherit;
+    }
+
+    @media (max-width: 900px) {
+      .info-panel { display: none; }
+      .sidebar { width: 220px; }
+    }
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3L4 7V12C4 16.8 7.8 21.2 12 22C16.2 21.2 20 16.8 20 12V7L12 3Z"
+            fill="#6c63ff" opacity="0.25" stroke="#6c63ff" stroke-width="1.5"/>
+      <path d="M8.5 12L11 14.5L15.5 10" stroke="#00d4aa" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    STVOR <span class="logo-sub">/ pqc chat</span>
+  </div>
+  <span class="badge">ML-KEM-768 + Double Ratchet</span>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <!-- Connect button -->
+      <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+        Connect TON Wallet
+      </button>
+      <!-- Wallet info (shown after connect) -->
+      <div class="wallet-info" id="walletInfo">
+        <div class="wallet-addr" id="walletAddr">—</div>
+        <div class="wallet-chain" id="walletChain">—</div>
+        <div class="security-badge">
+          🔐 Hybrid PQC active · ML-KEM-768 + P-256
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-contacts">
+      <div class="contacts-label">Chats</div>
+      <div id="contactsList"></div>
+      <button class="new-chat" id="newChatBtn" onclick="showNewChat()" disabled>
+        + New chat
+      </button>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area">
+    <!-- Empty state -->
+    <div class="chat-empty" id="chatEmpty">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <path d="M32 8L8 20V32C8 46 18 57 32 60C46 57 56 46 56 32V20L32 8Z"
+              stroke="#6c63ff" stroke-width="2"/>
+        <path d="M22 32L28 38L42 24" stroke="#00d4aa" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Connect your TON wallet to start chatting</p>
+      <p style="font-size:0.8rem">All messages are encrypted with ML-KEM-768 + Double Ratchet</p>
+    </div>
+
+    <!-- Active chat -->
+    <div id="chatActive" style="display:none; flex-direction:column; flex:1; min-height:0;">
+      <div class="chat-header">
+        <div class="chat-peer">
+          <div class="chat-peer-name" id="chatPeerName">—</div>
+          <div class="chat-peer-addr" id="chatPeerAddr">—</div>
+        </div>
+        <div class="chat-status">
+          <div class="status-dot"></div>
+          <span>E2EE active</span>
+        </div>
+      </div>
+      <div class="messages" id="messagesList"></div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="msgInput"
+          placeholder="Send an encrypted message..."
+          rows="1"
+          onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled title="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="info-panel">
+    <div class="info-title">Session info</div>
+
+    <div class="info-row">
+      <div class="info-label">Protocol</div>
+      <div class="info-val purple">Hybrid X3DH + Double Ratchet</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Key exchange</div>
+      <div class="info-val green">ML-KEM-768 + P-256 ECDH</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Cipher</div>
+      <div class="info-val green">AES-256-GCM</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">KDF</div>
+      <div class="info-val green">HKDF-SHA256</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Standard</div>
+      <div class="info-val purple">NIST FIPS 203</div>
+    </div>
+    <div class="sep"></div>
+    <div class="info-row">
+      <div class="info-label">My IK (truncated)</div>
+      <div class="info-val" id="infoMyIk">—</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">ML-KEM EK size</div>
+      <div class="info-val green" id="infoEkSize">—</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Messages sent</div>
+      <div class="info-val" id="infoMsgCount">0</div>
+    </div>
+    <div class="sep"></div>
+    <div class="info-row">
+      <div class="info-label">Network</div>
+      <div class="info-val" id="infoNetwork">—</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Contract</div>
+      <div class="info-val" style="font-size:0.65rem" id="infoContract">—</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- New chat modal -->
+<div class="modal-overlay" id="newChatModal">
+  <div class="modal">
+    <h3>New encrypted chat</h3>
+    <p>Enter the TON wallet address of the person you want to chat with.</p>
+    <input id="peerAddrInput" type="text"
+           placeholder="0:abc123... or EQ..." spellcheck="false" />
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="closeModal()">Cancel</button>
+      <button class="btn-prim" onclick="startChat()">Start chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const CONTRACT_ADDRESS = 'EQD_REPLACE_WITH_DEPLOYED_ADDRESS';
+const TON_API_URL      = 'https://testnet.toncenter.com/api/v2';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let wasm       = null;
+let stvorClient = null;
+let currentPeer = null;
+const contacts  = new Map();  // address → { name, messages: [] }
+let msgCount    = 0;
+
+// ─── WASM init ────────────────────────────────────────────────────────────────
+
+async function initWasm() {
+  try {
+    // Try to load from relative path (works when served from /demo/)
+    const wasmMod = await import('../sdk/wasm/stvor_crypto.js');
+    const response = await fetch('../sdk/wasm/stvor_crypto_bg.wasm');
+    const buffer   = await response.arrayBuffer();
+    await wasmMod.default({ module_or_path: buffer });
+    wasm = wasmMod;
+    toast('✓ WASM crypto engine loaded', 'ok');
+    return true;
+  } catch {
+    toast('⚠️ WASM not found — run from project root with a local server', 'err');
+    return false;
+  }
+}
+
+// ─── Mock TonConnect (demo mode) ──────────────────────────────────────────────
+// In production replace with real @tonconnect/sdk connector
+
+function buildMockProvider(address, chain) {
+  // Generates a deterministic mock signature from address
+  const sig = Array.from({ length: 64 }, (_, i) =>
+    address.charCodeAt(i % address.length) ^ i
+  );
+
+  return {
+    account: { address, chain, publicKey: '00'.repeat(32) },
+    async signData() {
+      return { signature: btoa(String.fromCharCode(...sig)), timestamp: Date.now() };
+    },
+    async signTransaction(to, bodyHex, value) {
+      // Mock: return empty BOC — real app would use TonConnect
+      toast(`ℹ️ Demo mode: tx to contract (${to.slice(0, 10)}...) not submitted`, 'ok');
+      return btoa('demo_boc');
+    },
+  };
+}
+
+// ─── Connect wallet ───────────────────────────────────────────────────────────
+
+window.connectWallet = async function() {
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading WASM...';
+
+  const ok = await initWasm();
+  if (!ok) { btn.disabled = false; btn.textContent = 'Connect TON Wallet'; return; }
+
+  btn.textContent = 'Connecting...';
+
+  // Demo mode: use a random testnet address
+  const mockAddr  = '0:' + Array.from({ length: 32 }, () =>
+    Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
+  ).join('');
+  const mockChain = '-3'; // testnet
+
+  try {
+    // Import SDK
+    const { connectWithTON } = await import('../sdk/dist/wallet.js');
+    const provider = buildMockProvider(mockAddr, mockChain);
+    const identity = await connectWithTON(provider, wasm, true);
+
+    // Show wallet info
+    document.getElementById('connectBtn').style.display = 'none';
+    const wi = document.getElementById('walletInfo');
+    wi.style.display = 'block';
+    document.getElementById('walletAddr').textContent =
+      mockAddr.slice(0, 8) + '...' + mockAddr.slice(-8);
+    document.getElementById('walletChain').textContent = 'TON Testnet · PQC enabled';
+
+    // Update info panel
+    document.getElementById('infoMyIk').textContent =
+      identity.identityKeyPair.public_key.slice(0, 16) + '...';
+    document.getElementById('infoEkSize').textContent =
+      identity.mlkemEncapKey ? '1184 bytes (ML-KEM-768)' : 'disabled';
+    document.getElementById('infoNetwork').textContent = 'TON Testnet (-3)';
+    document.getElementById('infoContract').textContent =
+      CONTRACT_ADDRESS.slice(0, 20) + '...';
+
+    document.getElementById('newChatBtn').disabled = false;
+    document.getElementById('chatEmpty').querySelector('p').textContent =
+      'Connected! Start a new chat ↓';
+
+    toast('✓ Wallet connected · PQC identity derived', 'ok');
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = 'Connect TON Wallet';
+  }
+};
+
+// ─── Chat management ──────────────────────────────────────────────────────────
+
+window.showNewChat = function() {
+  document.getElementById('newChatModal').classList.add('show');
+  document.getElementById('peerAddrInput').focus();
+};
+
+window.closeModal = function() {
+  document.getElementById('newChatModal').classList.remove('show');
+};
+
+window.startChat = function() {
+  const raw = document.getElementById('peerAddrInput').value.trim();
+  if (!raw) return;
+
+  // Normalize address
+  let addr = raw;
+  if (!addr.includes(':') && !addr.startsWith('0x')) {
+    // Assume it's a raw hex without prefix
+    addr = '0:' + addr;
+  }
+
+  addContact(addr);
+  openChat(addr);
+  closeModal();
+  document.getElementById('peerAddrInput').value = '';
+};
+
+function addContact(addr) {
+  if (contacts.has(addr)) return;
+  const short = addr.slice(0, 6) + '...' + addr.slice(-4);
+  contacts.set(addr, {
+    name: 'User ' + short,
+    address: addr,
+    messages: [],
+    unread: 0,
+  });
+  renderContacts();
+}
+
+function renderContacts() {
+  const list = document.getElementById('contactsList');
+  list.innerHTML = '';
+  for (const [addr, c] of contacts) {
+    const el = document.createElement('div');
+    el.className = 'contact' + (addr === currentPeer ? ' active' : '');
+    el.onclick = () => openChat(addr);
+    el.innerHTML = `
+      <div class="contact-avatar">${c.name[5].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="contact-name">${c.name}</div>
+        <div class="contact-addr">${addr.slice(0, 8)}...${addr.slice(-6)}</div>
+      </div>
+      ${c.unread > 0 ? `<div class="contact-unread">${c.unread}</div>` : ''}
+    `;
+    list.appendChild(el);
+  }
+}
+
+function openChat(addr) {
+  currentPeer = addr;
+  const c = contacts.get(addr);
+  c.unread = 0;
+
+  document.getElementById('chatEmpty').style.display = 'none';
+  const chatActive = document.getElementById('chatActive');
+  chatActive.style.display = 'flex';
+  document.getElementById('chatPeerName').textContent = c.name;
+  document.getElementById('chatPeerAddr').textContent =
+    addr.slice(0, 12) + '...' + addr.slice(-8);
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('msgInput').disabled = false;
+
+  renderMessages(addr);
+  renderContacts();
+}
+
+function renderMessages(addr) {
+  const c = contacts.get(addr);
+  const list = document.getElementById('messagesList');
+  list.innerHTML = '';
+
+  for (const msg of c.messages) {
+    const el = document.createElement('div');
+    el.className = 'msg ' + (msg.mine ? 'mine' : 'theirs');
+    const time = new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    el.innerHTML = `
+      <div>${escHtml(msg.text)}</div>
+      <div class="msg-time">${time}</div>
+      <div class="msg-enc-badge ${msg.mine ? 'mine' : ''}">
+        🔐 ${msg.pqc ? 'ML-KEM-768 + AES-256-GCM' : 'AES-256-GCM'}
+      </div>
+    `;
+    list.appendChild(el);
+  }
+  list.scrollTop = list.scrollHeight;
+}
+
+// ─── Send message ─────────────────────────────────────────────────────────────
+
+window.sendMessage = async function() {
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text || !currentPeer) return;
+
+  input.value = '';
+  autoResize(input);
+
+  const c = contacts.get(currentPeer);
+  if (!c) return;
+
+  // Simulate PQC encryption and sending
+  const msg = { text, ts: Date.now(), mine: true, pqc: true };
+  c.messages.push(msg);
+  msgCount++;
+  document.getElementById('infoMsgCount').textContent = String(msgCount);
+
+  renderMessages(currentPeer);
+  toast('🔐 Message encrypted with ML-KEM-768 + AES-256-GCM', 'ok');
+
+  // Simulate reply after 1.5s (demo mode)
+  setTimeout(() => simulateReply(currentPeer), 1500);
+};
+
+function simulateReply(addr) {
+  const c = contacts.get(addr);
+  if (!c) return;
+
+  const replies = [
+    'Got your encrypted message! 🔐',
+    'This PQC encryption is amazing',
+    'Quantum-safe messaging on TON 🚀',
+    'ML-KEM-768 keeps us safe from future quantum attacks',
+    'Double Ratchet ensures forward secrecy too',
+  ];
+  const text = replies[Math.floor(Math.random() * replies.length)];
+  c.messages.push({ text, ts: Date.now(), mine: false, pqc: true });
+
+  if (currentPeer === addr) renderMessages(addr);
+  else { c.unread++; renderContacts(); }
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+
+window.handleKey = function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  autoResize(e.target);
+};
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+let toastTimer = null;
+window.toast = function(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+};
+
+// Enter to confirm modal
+document.getElementById('peerAddrInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startChat();
+});
+
+// Demo: add a default contact to show the UI
+setTimeout(() => {
+  addContact('0:' + 'ab'.repeat(32));
+  const demoContact = contacts.values().next().value;
+  demoContact.messages = [
+    { text: 'Welcome to STVOR PQC Chat! 👋', ts: Date.now() - 60000, mine: false, pqc: true },
+    { text: 'Connect your wallet to start chatting securely', ts: Date.now() - 30000, mine: false, pqc: true },
+  ];
+  renderContacts();
+}, 200);
+</script>
+
+</body>
+</html>

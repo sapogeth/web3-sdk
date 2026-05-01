@@ -1,0 +1,33 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_wasmkeypair_free: (a: number, b: number) => void;
+export const __wbg_wasmsession_free: (a: number, b: number) => void;
+export const wasm_ec_sign: (a: number, b: number, c: number) => [number, number, number, number];
+export const wasm_ec_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
+export const wasm_hkdf: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+export const wasm_hybrid_initiate: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const wasm_hybrid_respond: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number, number];
+export const wasm_hybrid_session_initiate: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const wasm_hybrid_session_respond: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
+export const wasm_mlkem_decaps: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const wasm_mlkem_encaps: (a: number, b: number) => [number, number, number, number];
+export const wasm_mlkem_keygen: () => [number, number, number, number];
+export const wasm_x3dh: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+export const wasmkeypair_from_private_key: (a: number, b: number) => [number, number, number];
+export const wasmkeypair_generate: () => number;
+export const wasmkeypair_private_key: (a: number) => [number, number];
+export const wasmkeypair_public_key: (a: number) => [number, number];
+export const wasmsession_decrypt: (a: number, b: number, c: number) => [number, number, number, number];
+export const wasmsession_encrypt: (a: number, b: number, c: number) => [number, number, number, number];
+export const wasmsession_establish: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
+export const wasmsession_from_json: (a: number, b: number) => [number, number, number];
+export const wasmsession_to_json: (a: number) => [number, number, number, number];
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_start: () => void;
