@@ -1,5 +1,214 @@
 /* @ts-self-types="./stvor_crypto.d.ts" */
 
+/**
+ * AA identity container exposed to JS
+ */
+export class WasmAaIdentity {
+    static __wrap(ptr) {
+        const obj = Object.create(WasmAaIdentity.prototype);
+        obj.__wbg_ptr = ptr;
+        WasmAaIdentityFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        WasmAaIdentityFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_wasmaaidentity_free(ptr, 0);
+    }
+    /**
+     * Wallet address
+     * @returns {string}
+     */
+    get address() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_address(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Chain type: "evm" or "ton"
+     * @returns {string}
+     */
+    get chain_type() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_chain_type(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Derive AA identity from a wallet signature.
+     *
+     * chain_type: "evm" | "ton"
+     * Returns WasmAaIdentity with all keys derived.
+     * @param {string} address
+     * @param {string} chain_id
+     * @param {string} chain_type
+     * @param {string} signature_b64
+     * @returns {WasmAaIdentity}
+     */
+    static derive(address, chain_id, chain_type, signature_b64) {
+        const ptr0 = passStringToWasm0(address, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(chain_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(chain_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(signature_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmaaidentity_derive(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return WasmAaIdentity.__wrap(ret[0]);
+    }
+    /**
+     * Establish hybrid X3DH session from this AA identity.
+     * Returns JSON: { session_json, mlkem_ct }
+     * @param {string} peer_ik_b64
+     * @param {string} peer_spk_b64
+     * @param {string} peer_mlkem_ek_b64
+     * @returns {string}
+     */
+    establish_session_with(peer_ik_b64, peer_spk_b64, peer_mlkem_ek_b64) {
+        let deferred5_0;
+        let deferred5_1;
+        try {
+            const ptr0 = passStringToWasm0(peer_ik_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(peer_spk_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ptr2 = passStringToWasm0(peer_mlkem_ek_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len2 = WASM_VECTOR_LEN;
+            const ret = wasm.wasmaaidentity_establish_session_with(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
+            var ptr4 = ret[0];
+            var len4 = ret[1];
+            if (ret[3]) {
+                ptr4 = 0; len4 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred5_0 = ptr4;
+            deferred5_1 = len4;
+            return getStringFromWasm0(ptr4, len4);
+        } finally {
+            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+        }
+    }
+    /**
+     * P-256 identity public key (base64url, 65 bytes)
+     * @returns {string}
+     */
+    get identity_key() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_identity_key(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * ML-KEM-768 encapsulation key (base64url, 1184 bytes)
+     * @returns {string}
+     */
+    get mlkem_ek() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_mlkem_ek(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Respond to a hybrid X3DH session from a peer.
+     * Returns WasmSession ready to use.
+     * @param {string} peer_ik_b64
+     * @param {string} peer_spk_b64
+     * @param {string} mlkem_ct_b64
+     * @returns {WasmSession}
+     */
+    respond_to_session(peer_ik_b64, peer_spk_b64, mlkem_ct_b64) {
+        const ptr0 = passStringToWasm0(peer_ik_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(peer_spk_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(mlkem_ct_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmaaidentity_respond_to_session(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return WasmSession.__wrap(ret[0]);
+    }
+    /**
+     * P-256 signed pre-key public (base64url, 65 bytes)
+     * @returns {string}
+     */
+    get signed_pre_key() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_signed_pre_key(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * ECDSA signature of SPK by IK (base64url, DER)
+     * @returns {string}
+     */
+    get spk_signature() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.wasmaaidentity_spk_signature(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Verify the SPK signature — returns true if valid
+     * @returns {boolean}
+     */
+    verify_spk() {
+        const ret = wasm.wasmaaidentity_verify_spk(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] !== 0;
+    }
+}
+if (Symbol.dispose) WasmAaIdentity.prototype[Symbol.dispose] = WasmAaIdentity.prototype.free;
+
 export class WasmKeyPair {
     static __wrap(ptr) {
         const obj = Object.create(WasmKeyPair.prototype);
@@ -188,6 +397,145 @@ export class WasmSession {
     }
 }
 if (Symbol.dispose) WasmSession.prototype[Symbol.dispose] = WasmSession.prototype.free;
+
+/**
+ * Create a UserOperation binding — proves E2EE session belongs to this AA op.
+ * Returns JSON: { user_op_hash, identity_sig, session_commitment }
+ * @param {string} user_op_hash_hex
+ * @param {WasmAaIdentity} identity
+ * @param {string} session_root_b64
+ * @returns {string}
+ */
+export function wasm_aa_bind_userop(user_op_hash_hex, identity, session_root_b64) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(user_op_hash_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        _assertClass(identity, WasmAaIdentity);
+        const ptr1 = passStringToWasm0(session_root_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wasm_aa_bind_userop(ptr0, len0, identity.__wbg_ptr, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Derive AA identity — shorthand function (no class needed)
+ * Returns JSON: { ik, spk, spk_sig, mlkem_ek, address, chain_type }
+ * @param {string} address
+ * @param {string} chain_id
+ * @param {string} chain_type
+ * @param {string} signature_b64
+ * @returns {string}
+ */
+export function wasm_aa_derive(address, chain_id, chain_type, signature_b64) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        const ptr0 = passStringToWasm0(address, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(chain_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(chain_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(signature_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.wasm_aa_derive(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
+ * Sign a TON v5 extension body with AA identity.
+ * Returns JSON: { body_hex, identity_sig, wallet_address }
+ * @param {string} wallet_address
+ * @param {string} body_hex
+ * @param {WasmAaIdentity} identity
+ * @returns {string}
+ */
+export function wasm_aa_sign_ton_extension(wallet_address, body_hex, identity) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(wallet_address, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(body_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        _assertClass(identity, WasmAaIdentity);
+        const ret = wasm.wasm_aa_sign_ton_extension(ptr0, len0, ptr1, len1, identity.__wbg_ptr);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Verify a TON v5 extension signature.
+ * @param {string} ext_json
+ * @param {string} identity_ik_b64
+ * @returns {boolean}
+ */
+export function wasm_aa_verify_ton_extension(ext_json, identity_ik_b64) {
+    const ptr0 = passStringToWasm0(ext_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(identity_ik_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.wasm_aa_verify_ton_extension(ptr0, len0, ptr1, len1);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0] !== 0;
+}
+
+/**
+ * Verify a UserOperation binding.
+ * @param {string} binding_json
+ * @param {string} identity_ik_b64
+ * @param {string} session_root_b64
+ * @returns {boolean}
+ */
+export function wasm_aa_verify_userop(binding_json, identity_ik_b64, session_root_b64) {
+    const ptr0 = passStringToWasm0(binding_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(identity_ik_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(session_root_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.wasm_aa_verify_userop(ptr0, len0, ptr1, len1, ptr2, len2);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return ret[0] !== 0;
+}
 
 /**
  * ECDSA sign: returns base64url DER signature
@@ -639,6 +987,9 @@ function __wbg_get_imports() {
     };
 }
 
+const WasmAaIdentityFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_wasmaaidentity_free(ptr, 1));
 const WasmKeyPairFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_wasmkeypair_free(ptr, 1));

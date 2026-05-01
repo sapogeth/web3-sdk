@@ -1,6 +1,60 @@
 /* tslint:disable */
 /* eslint-disable */
 
+/**
+ * AA identity container exposed to JS
+ */
+export class WasmAaIdentity {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Derive AA identity from a wallet signature.
+     *
+     * chain_type: "evm" | "ton"
+     * Returns WasmAaIdentity with all keys derived.
+     */
+    static derive(address: string, chain_id: string, chain_type: string, signature_b64: string): WasmAaIdentity;
+    /**
+     * Establish hybrid X3DH session from this AA identity.
+     * Returns JSON: { session_json, mlkem_ct }
+     */
+    establish_session_with(peer_ik_b64: string, peer_spk_b64: string, peer_mlkem_ek_b64: string): string;
+    /**
+     * Respond to a hybrid X3DH session from a peer.
+     * Returns WasmSession ready to use.
+     */
+    respond_to_session(peer_ik_b64: string, peer_spk_b64: string, mlkem_ct_b64: string): WasmSession;
+    /**
+     * Verify the SPK signature — returns true if valid
+     */
+    verify_spk(): boolean;
+    /**
+     * Wallet address
+     */
+    readonly address: string;
+    /**
+     * Chain type: "evm" or "ton"
+     */
+    readonly chain_type: string;
+    /**
+     * P-256 identity public key (base64url, 65 bytes)
+     */
+    readonly identity_key: string;
+    /**
+     * ML-KEM-768 encapsulation key (base64url, 1184 bytes)
+     */
+    readonly mlkem_ek: string;
+    /**
+     * P-256 signed pre-key public (base64url, 65 bytes)
+     */
+    readonly signed_pre_key: string;
+    /**
+     * ECDSA signature of SPK by IK (base64url, DER)
+     */
+    readonly spk_signature: string;
+}
+
 export class WasmKeyPair {
     free(): void;
     [Symbol.dispose](): void;
@@ -37,6 +91,34 @@ export class WasmSession {
      */
     to_json(): string;
 }
+
+/**
+ * Create a UserOperation binding — proves E2EE session belongs to this AA op.
+ * Returns JSON: { user_op_hash, identity_sig, session_commitment }
+ */
+export function wasm_aa_bind_userop(user_op_hash_hex: string, identity: WasmAaIdentity, session_root_b64: string): string;
+
+/**
+ * Derive AA identity — shorthand function (no class needed)
+ * Returns JSON: { ik, spk, spk_sig, mlkem_ek, address, chain_type }
+ */
+export function wasm_aa_derive(address: string, chain_id: string, chain_type: string, signature_b64: string): string;
+
+/**
+ * Sign a TON v5 extension body with AA identity.
+ * Returns JSON: { body_hex, identity_sig, wallet_address }
+ */
+export function wasm_aa_sign_ton_extension(wallet_address: string, body_hex: string, identity: WasmAaIdentity): string;
+
+/**
+ * Verify a TON v5 extension signature.
+ */
+export function wasm_aa_verify_ton_extension(ext_json: string, identity_ik_b64: string): boolean;
+
+/**
+ * Verify a UserOperation binding.
+ */
+export function wasm_aa_verify_userop(binding_json: string, identity_ik_b64: string, session_root_b64: string): boolean;
 
 /**
  * ECDSA sign: returns base64url DER signature
@@ -99,8 +181,14 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly __wbg_wasmaaidentity_free: (a: number, b: number) => void;
     readonly __wbg_wasmkeypair_free: (a: number, b: number) => void;
     readonly __wbg_wasmsession_free: (a: number, b: number) => void;
+    readonly wasm_aa_bind_userop: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly wasm_aa_derive: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly wasm_aa_sign_ton_extension: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly wasm_aa_verify_ton_extension: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly wasm_aa_verify_userop: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly wasm_ec_sign: (a: number, b: number, c: number) => [number, number, number, number];
     readonly wasm_ec_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly wasm_hkdf: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
@@ -112,6 +200,16 @@ export interface InitOutput {
     readonly wasm_mlkem_encaps: (a: number, b: number) => [number, number, number, number];
     readonly wasm_mlkem_keygen: () => [number, number, number, number];
     readonly wasm_x3dh: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly wasmaaidentity_address: (a: number) => [number, number];
+    readonly wasmaaidentity_chain_type: (a: number) => [number, number];
+    readonly wasmaaidentity_derive: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
+    readonly wasmaaidentity_establish_session_with: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+    readonly wasmaaidentity_identity_key: (a: number) => [number, number];
+    readonly wasmaaidentity_mlkem_ek: (a: number) => [number, number];
+    readonly wasmaaidentity_respond_to_session: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
+    readonly wasmaaidentity_signed_pre_key: (a: number) => [number, number];
+    readonly wasmaaidentity_spk_signature: (a: number) => [number, number];
+    readonly wasmaaidentity_verify_spk: (a: number) => [number, number, number];
     readonly wasmkeypair_from_private_key: (a: number, b: number) => [number, number, number];
     readonly wasmkeypair_generate: () => number;
     readonly wasmkeypair_private_key: (a: number) => [number, number];
@@ -125,9 +223,9 @@ export interface InitOutput {
     readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
+    readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
-    readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_start: () => void;
 }
 

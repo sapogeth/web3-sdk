@@ -28,9 +28,11 @@ Every message sent today can be stored and decrypted later by a quantum computer
 - **Hybrid post-quantum X3DH** — ML-KEM-768 + P-256, HKDF-combined
 - **Double Ratchet** — forward secrecy and break-in recovery (Signal Protocol)
 - **TON wallet identity** — `userId = wallet address`. No accounts, no passwords
+- **Account Abstraction** — ERC-4337 (Safe, Coinbase, Biconomy, ZeroDev) + TON Wallet v5
+- **UserOperation binding** — cryptographically binds E2EE session to a specific AA op
 - **On-chain key registry** — public keys stored in a FunC smart contract
 - **TON Storage delivery** — encrypted messages stored off-chain, decentralised
-- **Zero dependencies** — 0 npm runtime dependencies. WASM crypto core (270 KB)
+- **Zero dependencies** — 0 npm runtime dependencies. WASM crypto core (Rust)
 - **NIST verified** — 53 official ACVTS test vectors (ECDH, ECDSA, AES-GCM, HKDF)
 
 ## Crypto stack
@@ -79,6 +81,54 @@ await alice.send('0:bob_address...', {
 // 5. Disconnect when done
 await alice.disconnect();
 ```
+
+---
+
+## Account Abstraction
+
+Works with any EIP-1193 provider — EOA wallet or ERC-4337 smart wallet (Safe, Coinbase, Biconomy, ZeroDev). Also supports TON Wallet v5 extensions.
+
+```ts
+import { StvorAA } from '@stvor/web3';
+import initWasm from '@stvor/web3/wasm';
+
+const wasm = await initWasm();
+
+// ── EVM — ERC-4337 (Safe, Coinbase Smart Wallet, ZeroDev, Biconomy…) ──
+const client = await StvorAA.connectEVM({
+  provider: window.ethereum,  // any EIP-1193 provider
+  chainId: 1,
+  wasm,
+});
+await client.send('0xrecipient...', { text: 'gm from AA wallet!' });
+
+// ── TON — Wallet v5 ──
+const tonClient = await StvorAA.connectTON({
+  provider: tonConnectProvider,
+  wasm,
+});
+
+// Bind E2EE session to a UserOperation (ERC-4337)
+const binding = client.bindUserOp(userOpHash, sessionRootKey);
+// binding.userOpHash / .identitySig / .sessionCommitment
+
+// Verify peer's binding
+const ok = client.verifyUserOp(binding, peerIdentityKey, sessionRootKey);
+
+// Sign TON v5 extension body
+const ext = tonClient.signTonExtension('deadbeef0102');
+const valid = tonClient.verifyTonExtension(ext, peerIk);
+```
+
+**How identity derivation works:**
+```
+personal_sign("STVOR-AA-EVM-v1:{chainId}:{address}")
+  → HKDF(sig, msg, "IK",  32)  →  P-256 identity keypair
+  → HKDF(sig, msg, "SPK", 32)  →  P-256 signed pre-key
+  → wasm_mlkem_keygen()         →  ML-KEM-768 keypair
+```
+
+Same signature always produces the same keys — deterministic and reproducible across sessions.
 
 ---
 

@@ -31,3 +31,11 @@ export type { TonConnectProvider, WalletIdentity } from './wallet.js';
 
 export { TonStorageClient, TonStorageError } from './ton-storage.js';
 export type { PublicKeys, StoredMessage } from './ton-storage.js';
+
+export { StvorAA, StvorAAClient, StvorAAError } from './account-abstraction.js';
+export type {
+  AAIdentity, AAMessage, AAMessageHandler,
+  EIP1193Provider, TonAAProvider,
+  StvorAAConfigEVM, StvorAAConfigTON,
+  UserOpBinding,
+} from './account-abstraction.js';

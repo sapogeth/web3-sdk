@@ -14,11 +14,13 @@ const wasmDir = join(__dirname, '../../wasm');
 const wasmBuffer = readFileSync(join(wasmDir, 'stvor_crypto_bg.wasm'));
 const {
   default: init,
-  WasmKeyPair, WasmSession,
+  WasmKeyPair, WasmSession, WasmAaIdentity,
   wasm_ec_sign, wasm_ec_verify, wasm_hkdf, wasm_x3dh,
   wasm_mlkem_keygen, wasm_mlkem_encaps, wasm_mlkem_decaps,
   wasm_hybrid_initiate, wasm_hybrid_respond,
   wasm_hybrid_session_initiate, wasm_hybrid_session_respond,
+  wasm_aa_derive, wasm_aa_bind_userop, wasm_aa_verify_userop,
+  wasm_aa_sign_ton_extension, wasm_aa_verify_ton_extension,
 } = await import(join(wasmDir, 'stvor_crypto.js'));
 
 await init(wasmBuffer);
@@ -306,6 +308,133 @@ await test('wasm_hybrid_session: 5 bidirectional rounds', () => {
     const decR  = alice.decrypt(encR);
     assert(reply.every((b, j) => b === decR[j]), `Round ${i} B→A failed`);
   }
+});
+
+// ─── Account Abstraction tests ────────────────────────────────────────────────
+
+// Mock signature: 64 bytes, deterministic
+const mockSig = (seed: number) =>
+  btoa(String.fromCharCode(...Array.from({ length: 64 }, (_, i) => (seed + i) & 0xff)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+await test('WasmAaIdentity.derive() — EVM identity', () => {
+  const id = WasmAaIdentity.derive(
+    '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+    '1',
+    'evm',
+    mockSig(42),
+  );
+  assert(id.chain_type === 'evm', 'chain_type must be evm');
+  assert(fromB64url(id.identity_key).length === 65, 'IK must be 65 bytes');
+  assert(fromB64url(id.mlkem_ek).length === 1184,   'ML-KEM EK must be 1184 bytes');
+  assert(id.address === '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef', 'address must match');
+});
+
+await test('WasmAaIdentity.derive() — TON identity', () => {
+  const id = WasmAaIdentity.derive(
+    '0:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    'mainnet',
+    'ton',
+    mockSig(99),
+  );
+  assert(id.chain_type === 'ton', 'chain_type must be ton');
+  assert(id.verify_spk(), 'SPK signature must verify');
+});
+
+await test('WasmAaIdentity — deterministic: same sig → same keys', () => {
+  const sig = mockSig(77);
+  const id1 = WasmAaIdentity.derive('0xabc', '1', 'evm', sig);
+  const id2 = WasmAaIdentity.derive('0xabc', '1', 'evm', sig);
+  assert(id1.identity_key === id2.identity_key, 'Same sig must produce same IK');
+  assert(id1.signed_pre_key === id2.signed_pre_key, 'Same sig must produce same SPK');
+});
+
+await test('WasmAaIdentity — different chains produce different keys', () => {
+  const sig = mockSig(55);
+  const evm = WasmAaIdentity.derive('0xabc', '1',       'evm', sig);
+  const ton = WasmAaIdentity.derive('0xabc', 'mainnet', 'ton', sig);
+  assert(evm.identity_key !== ton.identity_key, 'Different chains must produce different IK');
+});
+
+await test('wasm_aa_derive() — shorthand function returns JSON', () => {
+  const json = JSON.parse(wasm_aa_derive('0x1234', '137', 'evm', mockSig(10)));
+  assert(typeof json.ik       === 'string', 'ik must be present');
+  assert(typeof json.spk      === 'string', 'spk must be present');
+  assert(typeof json.spk_sig  === 'string', 'spk_sig must be present');
+  assert(typeof json.mlkem_ek === 'string', 'mlkem_ek must be present');
+  assert(json.chain_type === 'evm',         'chain_type must be evm');
+});
+
+await test('wasm_aa_bind_userop + wasm_aa_verify_userop — roundtrip', () => {
+  const id = WasmAaIdentity.derive('0xdeadbeef', '1', 'evm', mockSig(11));
+  const sessionRoot = fromB64url(
+    btoa(String.fromCharCode(...new Uint8Array(32).fill(0x42)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  );
+  const sessionB64 = btoa(String.fromCharCode(...sessionRoot))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  const userOpHash = '42'.repeat(32); // 64 hex chars = 32 bytes
+
+  const bindingJson = wasm_aa_bind_userop(userOpHash, id, sessionB64);
+  const binding     = JSON.parse(bindingJson);
+  assert(typeof binding.user_op_hash       === 'string', 'user_op_hash must be present');
+  assert(typeof binding.identity_sig       === 'string', 'identity_sig must be present');
+  assert(typeof binding.session_commitment === 'string', 'session_commitment must be present');
+
+  const valid = wasm_aa_verify_userop(bindingJson, id.identity_key, sessionB64);
+  assert(valid, 'UserOpBinding must verify with correct key');
+});
+
+await test('wasm_aa_verify_userop — wrong key rejected', () => {
+  const id1 = WasmAaIdentity.derive('0xaaa', '1', 'evm', mockSig(1));
+  const id2 = WasmAaIdentity.derive('0xbbb', '1', 'evm', mockSig(2));
+  const sessionB64 = btoa(String.fromCharCode(...new Uint8Array(32).fill(0x11)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const userOpHash = 'ab'.repeat(32);
+
+  const bindingJson = wasm_aa_bind_userop(userOpHash, id1, sessionB64);
+  const valid = wasm_aa_verify_userop(bindingJson, id2.identity_key, sessionB64);
+  assert(!valid, 'Wrong key must be rejected');
+});
+
+await test('wasm_aa_sign_ton_extension + verify — roundtrip', () => {
+  const id      = WasmAaIdentity.derive('0:1234', 'mainnet', 'ton', mockSig(88));
+  const bodyHex = 'deadbeef01020304cafebabe';
+
+  const extJson = wasm_aa_sign_ton_extension('0:1234', bodyHex, id);
+  const ext     = JSON.parse(extJson);
+  assert(typeof ext.identity_sig   === 'string', 'identity_sig must be present');
+  assert(ext.wallet_address        === '0:1234',  'wallet_address must match');
+  assert(ext.body_hex              === bodyHex,   'body_hex must match');
+
+  const valid = wasm_aa_verify_ton_extension(extJson, id.identity_key);
+  assert(valid, 'TON v5 extension must verify');
+});
+
+await test('WasmAaIdentity — full hybrid session between two AA identities', () => {
+  const alice = WasmAaIdentity.derive('0xalice', '1', 'evm', mockSig(10));
+  const bob   = WasmAaIdentity.derive('0xbob',   '1', 'evm', mockSig(20));
+
+  // Alice initiates session with Bob
+  const initResult = JSON.parse(alice.establish_session_with(
+    bob.identity_key, bob.signed_pre_key, bob.mlkem_ek,
+  ));
+  const aliceSess = WasmSession.from_json(initResult.session_json);
+
+  // Bob responds
+  const bobSess = bob.respond_to_session(
+    alice.identity_key, alice.signed_pre_key, initResult.mlkem_ct,
+  );
+
+  // Encrypt/decrypt
+  const msg = new TextEncoder().encode('AA PQC session works!');
+  const enc = aliceSess.encrypt(msg);
+  const dec = bobSess.decrypt(enc);
+  assert(
+    msg.every((b, i) => b === dec[i]),
+    'AA hybrid session message must decrypt correctly',
+  );
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

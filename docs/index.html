@@ -551,6 +551,13 @@
     <a href="#deploy">Deploy</a>
   </div>
   <div class="sidebar-section">
+    <div class="sidebar-title">Account Abstraction</div>
+    <a href="#aa">Overview</a>
+    <a href="#aa">ERC-4337 EVM</a>
+    <a href="#aa">TON Wallet v5</a>
+    <a href="#aa">UserOp binding</a>
+  </div>
+  <div class="sidebar-section">
     <div class="sidebar-title">Playground</div>
     <a href="#demo">Live demo</a>
   </div>
@@ -923,6 +930,13 @@ unsub(); <span class="cmt">// stop listening</span></code></pre>
         <td class="cross">✗</td>
       </tr>
       <tr>
+        <td>Account Abstraction (ERC-4337 + TON v5)</td>
+        <td class="check">✓</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+        <td class="cross">✗</td>
+      </tr>
+      <tr>
         <td>TON wallet identity</td>
         <td class="check">✓</td>
         <td class="cross">✗</td>
@@ -965,6 +979,95 @@ unsub(); <span class="cmt">// stop listening</span></code></pre>
         <td class="check">✓</td>
       </tr>
     </table>
+  </section>
+
+  <!-- Account Abstraction -->
+  <section class="section" id="aa">
+    <h2>Account Abstraction</h2>
+    <p>
+      <code>@stvor/web3</code> supports any smart wallet — ERC-4337 on EVM and TON Wallet v5 extensions.
+      Identity is derived from the wallet address, not from a private key.
+      The <strong>same API</strong> works for EOA wallets, Safe, Coinbase Smart Wallet, Biconomy, ZeroDev, and TON v5.
+    </p>
+
+    <div class="features" style="margin-top:1rem">
+      <div class="feature-card">
+        <div class="feature-icon">🔷</div>
+        <div class="feature-title">ERC-4337 (EVM)</div>
+        <div class="feature-desc">Works with Safe, Coinbase Smart Wallet, Biconomy, ZeroDev, Kernel. Uses <code>personal_sign</code> via EIP-1193. No dependency on any AA SDK.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💎</div>
+        <div class="feature-title">TON Wallet v5</div>
+        <div class="feature-desc">Signs via <code>signData</code> TON Connect v2. Supports wallet v5 extensions — binds E2EE session to an extension body.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <div class="feature-title">UserOperation binding</div>
+        <div class="feature-desc">Cryptographically binds an E2EE session to a specific ERC-4337 UserOperation. Proves the session belongs to the AA wallet submitting the op.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">PQC identity from any wallet</div>
+        <div class="feature-desc">HKDF(personal_sign) → P-256 IK + SPK + ML-KEM-768 keypair. Same signature always produces same keys — deterministic and reproducible.</div>
+      </div>
+    </div>
+
+    <h3>EVM — ERC-4337 (Safe, Coinbase, Biconomy, ZeroDev…)</h3>
+    <pre><code><span class="kw">import</span> { StvorAA } <span class="kw">from</span> <span class="str">'@stvor/web3'</span>;
+<span class="kw">import</span> initWasm <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span>;
+
+<span class="kw">const</span> wasm = <span class="kw">await</span> initWasm();
+
+<span class="cmt">// Works with ANY EIP-1193 provider — EOA or smart wallet</span>
+<span class="kw">const</span> client = <span class="kw">await</span> StvorAA.<span class="fn">connectEVM</span>({
+  provider: window.ethereum,  <span class="cmt">// MetaMask, Safe, Coinbase, Biconomy...</span>
+  chainId: <span class="num">1</span>,
+  wasm,
+});
+
+<span class="cmt">// Send PQC-encrypted message to any EVM address</span>
+<span class="kw">await</span> client.<span class="fn">send</span>(<span class="str">'0xrecipient...'</span>, { text: <span class="str">'gm from AA wallet!'</span> });
+
+console.<span class="fn">log</span>(client.address);   <span class="cmt">// AA wallet address</span>
+console.<span class="fn">log</span>(client.chainType);  <span class="cmt">// 'evm'</span></code></pre>
+
+    <h3>TON — Wallet v5 extension</h3>
+    <pre><code><span class="kw">const</span> client = <span class="kw">await</span> StvorAA.<span class="fn">connectTON</span>({
+  provider: tonConnectProvider,  <span class="cmt">// TON Connect v2</span>
+  wasm,
+});
+
+<span class="cmt">// Sign a TON v5 extension body — proves ownership</span>
+<span class="kw">const</span> ext = client.<span class="fn">signTonExtension</span>(<span class="str">'deadbeef0102'</span>);
+<span class="cmt">// ext.bodyHex, ext.identitySig, ext.walletAddress</span>
+
+<span class="cmt">// Verify a peer's extension signature</span>
+<span class="kw">const</span> ok = client.<span class="fn">verifyTonExtension</span>(ext, peerIdentityKey);</code></pre>
+
+    <h3>UserOperation binding (ERC-4337)</h3>
+    <pre><code><span class="cmt">// Bind an E2EE session to a specific UserOperation</span>
+<span class="kw">const</span> binding = client.<span class="fn">bindUserOp</span>(
+  userOpHash,    <span class="cmt">// keccak256(UserOperation) — hex, 32 bytes</span>
+  sessionKey,    <span class="cmt">// Double Ratchet root key — base64url, 32 bytes</span>
+);
+<span class="cmt">// binding.userOpHash, binding.identitySig, binding.sessionCommitment</span>
+
+<span class="cmt">// Bundler / relayer verifies the binding on-chain</span>
+<span class="kw">const</span> valid = client.<span class="fn">verifyUserOp</span>(binding, peerIdentityKey, sessionKey);
+<span class="cmt">// → true: this E2EE session belongs to the AA wallet that sent the UserOp</span></code></pre>
+
+    <h3>Identity derivation</h3>
+    <pre><code><span class="cmt">// Signature → deterministic PQC identity keys (pure Rust WASM)</span>
+<span class="cmt">// STVOR-AA-EVM-v1:{chainId}:{address}  →  personal_sign  →  HKDF</span>
+<span class="cmt">//   IK  = HKDF(sig, msg, "IK",  32)  →  P-256 keypair</span>
+<span class="cmt">//   SPK = HKDF(sig, msg, "SPK", 32)  →  P-256 keypair</span>
+<span class="cmt">//   ML-KEM-768 keypair  →  hybrid post-quantum session key exchange</span>
+
+<span class="kw">const</span> id = JSON.<span class="fn">parse</span>(<span class="fn">wasm_aa_derive</span>(
+  <span class="str">'0xwallet'</span>, <span class="str">'1'</span>, <span class="str">'evm'</span>, signatureB64
+));
+<span class="cmt">// id.ik, id.spk, id.spk_sig, id.mlkem_ek, id.address, id.chain_type</span></code></pre>
   </section>
 
   <!-- Contract -->
@@ -1010,6 +1113,7 @@ node deploy.mjs
     <div class="demo-tabs">
       <button class="demo-tab active" onclick="showTab('tab-mlkem')">ML-KEM-768</button>
       <button class="demo-tab" onclick="showTab('tab-session')">E2EE Session</button>
+      <button class="demo-tab" onclick="showTab('tab-aa')">Account Abstraction</button>
       <button class="demo-tab" onclick="showTab('tab-hkdf')">HKDF</button>
     </div>
 
@@ -1028,6 +1132,13 @@ node deploy.mjs
     </div>
 
     <!-- HKDF tab -->
+    <!-- AA tab -->
+    <div id="tab-aa" class="demo-panel" style="display:none">
+      <div class="demo-desc">Derive a post-quantum E2EE identity from a smart wallet address. Works with ERC-4337 (EVM) and TON Wallet v5. Then bind a UserOperation to an E2EE session.</div>
+      <button class="demo-run" id="btn-aa" onclick="runAA()">▶ Run</button>
+      <div class="demo-output" id="out-aa">Click "Run" to execute in your browser...</div>
+    </div>
+
     <div id="tab-hkdf" class="demo-panel" style="display:none">
       <div class="demo-desc">HKDF-SHA256 key derivation — deterministic, RFC 5869 compliant. Try with custom inputs.</div>
       <div class="demo-inputs">
@@ -1246,6 +1357,82 @@ cd crypto-core && wasm-pack build --target web --out-dir ../sdk/wasm</code></pre
         fmt('2 messages time', `${(t2-t1).toFixed(2)} ms`);
     } catch (e) {
       out.innerHTML = `<span class="err">Error: ${e.message}\n\nRun locally: npm install @stvor/web3</span>`;
+    }
+    btn.disabled = false;
+  }
+
+  // ── AA demo ───────────────────────────────────────────────────────────────────
+  async function runAA() {
+    const btn = document.getElementById('btn-aa');
+    const out = document.getElementById('out-aa');
+    btn.disabled = true;
+    out.innerHTML = 'Loading WASM...';
+    try {
+      const m = await loadWasm();
+      const { wasm_aa_derive, wasm_aa_bind_userop, wasm_aa_verify_userop,
+              wasm_aa_sign_ton_extension, wasm_aa_verify_ton_extension } = m;
+
+      // Mock signature (64 bytes) — in production: wallet personal_sign
+      const mockSig = btoa(String.fromCharCode(...Array.from({ length: 64 }, (_, i) => (42 + i) & 0xff)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const evmAddr = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
+      const tonAddr = '0:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+
+      const t0 = performance.now();
+
+      // 1. Derive EVM AA identity
+      const evmId = JSON.parse(wasm_aa_derive(evmAddr, '1', 'evm', mockSig));
+
+      // 2. Derive TON AA identity
+      const tonId = JSON.parse(wasm_aa_derive(tonAddr, 'mainnet', 'ton', mockSig));
+
+      const t1 = performance.now();
+
+      // 3. UserOperation binding (ERC-4337)
+      const userOpHash = '42'.repeat(32);
+      const sessionRoot = btoa(String.fromCharCode(...new Array(32).fill(0x11)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const { WasmAaIdentity } = m;
+      const wasmEvmId = WasmAaIdentity.derive(evmAddr, '1', 'evm', mockSig);
+      const bindingJson = wasm_aa_bind_userop(userOpHash, wasmEvmId, sessionRoot);
+      const binding = JSON.parse(bindingJson);
+      const bindValid = wasm_aa_verify_userop(bindingJson, evmId.ik, sessionRoot);
+
+      // 4. TON v5 extension signing
+      const wasmTonId = WasmAaIdentity.derive(tonAddr, 'mainnet', 'ton', mockSig);
+      const extJson = wasm_aa_sign_ton_extension(tonAddr, 'deadbeef01020304', wasmTonId);
+      const extValid = wasm_aa_verify_ton_extension(extJson, tonId.ik);
+
+      const t2 = performance.now();
+
+      out.innerHTML =
+        fmt('Protocol', 'Account Abstraction — ERC-4337 + TON v5') +
+        fmt('Crypto',   'HKDF(personal_sign) → P-256 IK + SPK + ML-KEM-768') +
+        '\n' +
+        '<span class="label">── EVM (ERC-4337) ──────────────────────────</span>\n' +
+        fmt('Address',    evmAddr) +
+        fmt('Chain',      'Ethereum Mainnet (chainId: 1)') +
+        fmt('Identity Key', short(evmId.ik, 24) + '  [65 bytes, P-256]') +
+        fmt('ML-KEM EK',    short(evmId.mlkem_ek, 24) + '  [1184 bytes]') +
+        '\n' +
+        '<span class="label">── UserOperation Binding ────────────────────</span>\n' +
+        fmt('UserOp Hash',        userOpHash.slice(0, 16) + '...  [32 bytes]') +
+        fmt('Identity Sig',       binding.identity_sig.slice(0, 20) + '...') +
+        fmt('Session Commitment', binding.session_commitment.slice(0, 20) + '...') +
+        `<span class="${bindValid ? 'ok' : 'err'}">${bindValid ? '✓ UserOp binding verified' : '✗ FAILED'}</span>\n` +
+        '\n' +
+        '<span class="label">── TON Wallet v5 Extension ──────────────────</span>\n' +
+        fmt('Address',      tonAddr.slice(0, 20) + '...') +
+        fmt('Chain',        'TON Mainnet') +
+        fmt('ML-KEM EK',   short(tonId.mlkem_ek, 24) + '  [1184 bytes]') +
+        `<span class="${extValid ? 'ok' : 'err'}">${extValid ? '✓ TON v5 extension verified' : '✗ FAILED'}</span>\n` +
+        '\n' +
+        fmt('Identity derivation', `${(t1-t0).toFixed(2)} ms`) +
+        fmt('Binding + verify',    `${(t2-t1).toFixed(2)} ms`);
+    } catch (e) {
+      out.innerHTML = `<span class="err">Error: ${e.message}</span>`;
     }
     btn.disabled = false;
   }
