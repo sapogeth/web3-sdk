@@ -10,7 +10,7 @@ The first E2EE library built for Web3 that is resistant to quantum computers —
 npm install @stvor/web3
 ```
 
-[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](https://github.com/stvor/web3)
+[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](https://github.com/sapogeth/web3-sdk)
 [![NIST FIPS 203](https://img.shields.io/badge/NIST%20FIPS%20203-ML--KEM--768-blue)](https://csrc.nist.gov/pubs/fips/203/final)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](https://npmjs.com/@stvor/web3)
 [![TON](https://img.shields.io/badge/network-TON-0088cc)](https://ton.org)
